@@ -2,16 +2,16 @@ import { motion } from "framer-motion";
 import Section from "../../components/ui/Section";
 
 const nodes = [
-  { label: "Conectividad", color: "var(--heatmap-cold)" },
-  { label: "Movilidad", color: "var(--heatmap-mid)" },
-  { label: "Empleo", color: "var(--primary-accent)" },
-  { label: "Formación", color: "var(--heatmap-mid)" },
-  { label: "Salud Mental", color: "var(--heatmap-hot)" },
+  { label: "Conectividad", color: "var(--color-primary)" },
+  { label: "Movilidad", color: "var(--color-secondary)" },
+  { label: "Empleo", color: "var(--color-primary)" },
+  { label: "Formación", color: "var(--color-secondary)" },
+  { label: "Salud Mental", color: "var(--color-primary)" },
 ];
 
 function ArrowIcon() {
   return (
-    <svg viewBox="0 0 16 24" className="h-6 w-4" fill="none" stroke="var(--primary-accent)" strokeWidth="1.2">
+    <svg viewBox="0 0 16 24" className="h-6 w-4" fill="none" stroke="var(--color-primary)" strokeWidth="1.2">
       <motion.path
         d="M8 0v16M8 16l-5-5M8 16l5-5"
         initial={{ pathLength: 0 }}
@@ -28,7 +28,7 @@ export default function IntelligenceSection() {
     <Section
       title="Inteligencia Territorial"
       subtitle="App BiT conecta las dimensiones clave del desarrollo regional en un sistema de análisis unificado."
-      dark
+            
     >
       <div className="flex flex-col items-center gap-0">
         {nodes.map((n, i) => (
@@ -44,17 +44,15 @@ export default function IntelligenceSection() {
               className="relative flex h-20 w-56 items-center justify-center rounded-sm font-semibold tracking-wide"
               style={{
                 backgroundColor: n.color,
-                color: n.label === "Conectividad" || n.label === "Salud Mental"
-                  ? "var(--text-primary)"
-                  : "var(--bg-main)",
-                border: "1px solid var(--border-subtle)",
+                color: "var(--bg-main)",
+                border: "1px solid var(--text-primary)",
               }}
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
               <motion.div
                 className="absolute -left-2 h-3 w-3 rounded-full"
-                style={{ backgroundColor: "var(--primary-accent)" }}
+                style={{ backgroundColor: "var(--bg-main)" }}
                 animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
               />
@@ -72,7 +70,7 @@ export default function IntelligenceSection() {
 
       <motion.p
         className="mx-auto mt-16 max-w-2xl text-center text-sm leading-relaxed"
-        style={{ color: "var(--border-subtle)" }}
+        style={{ color: "var(--text-secondary)" }}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}

@@ -62,7 +62,7 @@ export default function CTASection() {
 
         <motion.p
           className="mx-auto mt-6 max-w-xl text-base leading-relaxed md:text-lg"
-          style={{ color: "var(--border-subtle)" }}
+          style={{ color: "var(--bg-main)" }}
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

@@ -56,6 +56,7 @@ export default function ProblemSection() {
   return (
     <Section
       title="Los datos existen. La visión integrada no."
+      dark
       subtitle="Los gobiernos generan enormes volúmenes de información, pero sin una plataforma que conecte los puntos, los patrones críticos permanecen invisibles."
     >
       <motion.div

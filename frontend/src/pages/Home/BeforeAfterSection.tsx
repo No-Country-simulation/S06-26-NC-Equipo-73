@@ -54,7 +54,7 @@ export default function BeforeAfterSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
               >
-                <span className="mt-0.5 shrink-0 text-heatmap-hot">✕</span>
+                <span className="mt-0.5 shrink-0" style={{ color: "var(--heatmap-hot)" }}>✕</span>
                 {b}
               </motion.li>
             ))}

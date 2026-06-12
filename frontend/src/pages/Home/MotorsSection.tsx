@@ -37,7 +37,7 @@ function Sparkline({ color }: { color: string }) {
 }
 
 const motors: MotorProps[] = [
-  { index: 0, title: "Formación", metric: "+127%", desc: "Acceso a programas educativos por región", accent: "var(--heatmap-cold)" },
+  { index: 0, title: "Formación", metric: "+127%", desc: "Acceso a programas educativos por región", accent: "var(--primary-accent)" },
   { index: 1, title: "Empleabilidad", metric: "86.3%", desc: "Tasa de inserción laboral por cluster productivo", accent: "var(--heatmap-mid)" },
   { index: 2, title: "Experiencias Estructurantes", metric: "243K", desc: "Trayectorias de jóvenes monitoreadas", accent: "var(--primary-accent)" },
   { index: 3, title: "Mentorías", metric: "1,847", desc: "Conexiones activas entre mentores y participantes", accent: "var(--heatmap-mid)" },
@@ -59,6 +59,7 @@ export default function MotorsSection() {
     <Section
       title="Los 5 Motores de Análisis"
       subtitle="Cada motor despliega inteligencia especializada para cubrir todas las dimensiones del desarrollo territorial."
+      dark
     >
       <motion.div
         variants={container}
@@ -78,7 +79,7 @@ export default function MotorsSection() {
             }}
             whileHover={{
               y: -6,
-              boxShadow: "0 12px 32px rgba(93, 74, 139, 0.08)",
+              boxShadow: "0 12px 32px rgba(183, 40, 24, 0.1)",
               transition: { duration: 0.3 },
             }}
           >

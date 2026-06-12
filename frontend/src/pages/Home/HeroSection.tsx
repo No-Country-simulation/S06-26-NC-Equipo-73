@@ -22,8 +22,8 @@ export default function HeroSection() {
           <div
             className="mb-6 inline-block rounded-full px-5 py-1.5 text-xs font-medium uppercase tracking-[0.2em] md:text-sm"
             style={{
-              backgroundColor: "var(--border-subtle)",
-              color: "var(--primary-accent)",
+              backgroundColor: "var(--color-container)",
+              color: "var(--color-primary)",
             }}
           >
             Plataforma de Inteligencia Territorial
