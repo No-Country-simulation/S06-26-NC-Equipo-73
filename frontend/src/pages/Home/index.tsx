@@ -1,13 +1,22 @@
-import React from 'react'
+import HeroSection from "./HeroSection";
+import ProblemSection from "./ProblemSection";
+import IntelligenceSection from "./IntelligenceSection";
+import MotorsSection from "./MotorsSection";
+import HowItWorksSection from "./HowItWorksSection";
+import HeartSystemSection from "./HeartSystemSection";
+import BeforeAfterSection from "./BeforeAfterSection";
+import CTASection from "./CTASection";
 
-const Home = () => {
+export default function Home() {
   return (
-    <>
-      <h1 className="text-3xl font-bold underline text-center text-text">
-        Hello world!
-      </h1>
-    </>
+    <main>
+      <HeroSection />
+      <ProblemSection />
+      <IntelligenceSection />
+      <MotorsSection />
+      <HowItWorksSection />
+      <BeforeAfterSection />
+      <CTASection />
+    </main>
   );
 }
-
-export default Home
