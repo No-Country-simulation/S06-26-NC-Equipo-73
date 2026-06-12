@@ -189,7 +189,7 @@ export default function BackgroundCanvas() {
       drawGrid();
       drawEdges(time);
       drawNodes(time);
-      drawParticles();
+      // drawParticles();
 
       animId = requestAnimationFrame(frame);
     }
