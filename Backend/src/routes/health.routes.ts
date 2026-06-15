@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { container } from '../container.js';
+import type { AppContainer } from '../container.js';
 
-const router = Router();
+export const createHealthRoutes = (container: AppContainer) => {
+    const router = Router();
 
 /**
  * @openapi
@@ -14,6 +15,7 @@ const router = Router();
  *       200:
  *         description: Backend operativo
  */
-router.get('/', container.healthController.getHealth);
+    router.get('/', container.healthController.getHealth);
 
-export default router;
+    return router;
+};

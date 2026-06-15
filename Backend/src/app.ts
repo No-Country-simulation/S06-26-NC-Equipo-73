@@ -3,7 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
-import routes from './routes/index.js';
+import { createContainer } from './container.js';
+import { createRoutes } from './routes/index.js';
 
 //Importando para crear las rutas
 
@@ -29,6 +30,7 @@ const options = {
     apis: ['./src/routes/*.ts']
 };
 const swaggerSpec = swaggerJSDoc(options);
+const container = await createContainer();
 
 app.use(helmet());
 app.use(cors(corsOptions));
@@ -44,7 +46,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Creando las rutas
-app.use('/api', routes);
+app.use('/api', createRoutes(container));
 
 export default app;
-

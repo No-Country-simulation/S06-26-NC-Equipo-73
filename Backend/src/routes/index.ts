@@ -1,8 +1,11 @@
 import { Router } from 'express';
-import healthRoutes from './health.routes.js';
+import type { AppContainer } from '../container.js';
+import { createHealthRoutes } from './health.routes.js';
 
-const router = Router();
+export const createRoutes = (container: AppContainer) => {
+    const router = Router();
 
-router.use('/health', healthRoutes);
+    router.use('/health', createHealthRoutes(container));
 
-export default router;
+    return router;
+};
