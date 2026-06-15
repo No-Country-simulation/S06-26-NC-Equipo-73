@@ -1,0 +1,17 @@
+{
+  "name": "s06-26-nc-equipo-73",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:backend": "npm install --prefix Backend",
+    "install:frontend": "npm install --prefix frontend",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "dev:backend": "npm run dev --prefix Backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "npm run build --prefix Backend && npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
