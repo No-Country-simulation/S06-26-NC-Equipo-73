@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import logger from '../config/logger.js';
 import type { DataService } from '../services/data.service.js';
 
 const dataRequestSchema = z.object({
@@ -25,6 +26,8 @@ export class DataController {
         const result = dataRequestSchema.safeParse(req.body);
 
         if (!result.success) {
+            logger.warn('Data query rejected due to an invalid request');
+
             res.status(400).json({
                 error: 'Solicitud inválida',
                 detalles: result.error.flatten(),

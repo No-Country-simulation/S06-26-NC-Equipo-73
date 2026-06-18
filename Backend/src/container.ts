@@ -1,6 +1,7 @@
 import { DataController } from './controllers/data.controller.js';
 import { HealthController } from './controllers/health.controller.js';
 import { MapController } from './controllers/map.controller.js';
+import { env } from './config/env.js';
 import { AIService } from './services/ai.service.js';
 import { DataService } from './services/data.service.js';
 import { HealthService } from './services/health.service.js';
@@ -8,7 +9,12 @@ import { MapService } from './services/map.service.js';
 
 export const createContainer = async () => {
     const healthService = new HealthService();
-    const aiService = new AIService();
+    const aiService = new AIService({
+        ...(env.AI_API_KEY && { apiKey: env.AI_API_KEY }),
+        ...(env.AI_MODEL && { model: env.AI_MODEL }),
+        ...(env.AI_BASE_URL && { baseUrl: env.AI_BASE_URL }),
+        timeoutMs: env.AI_TIMEOUT_MS,
+    });
     const dataService = new DataService(aiService);
     const mapService = new MapService();
 
