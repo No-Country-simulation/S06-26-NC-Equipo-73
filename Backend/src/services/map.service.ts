@@ -1,3 +1,5 @@
+import logger from '../config/logger.js';
+
 export interface MapRegion {
     region: string;
     lat: number;
@@ -14,8 +16,14 @@ export interface MapResponse {
 
 export class MapService {
     getRegions(): MapResponse {
-        return {
+        logger.debug('Map regions requested');
+
+        const response: MapResponse = {
             regions: [],
         };
+
+        logger.debug(`Map regions retrieved: ${response.regions.length}`);
+
+        return response;
     }
 }

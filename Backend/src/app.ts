@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
+import { env } from './config/env.js';
 import { createContainer } from './container.js';
 import { createRoutes } from './routes/index.js';
 
@@ -12,7 +13,7 @@ const app = express();
 
 // Opciónes de Cors, definimos que dominio puede consumir las APIs y qué métodos HTTP están permitidos.
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: env.CORS_ORIGIN,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type']
 };
@@ -36,7 +37,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
 
-if (process.env.NODE_ENV !== 'production') {
+if (env.SWAGGER_ENABLED) {
     app.get('/swagger.json', (_req, res) => {
         res.setHeader('Content-Type', 'application/json');
         res.send(swaggerSpec);

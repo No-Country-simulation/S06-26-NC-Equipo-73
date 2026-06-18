@@ -1,11 +1,9 @@
-import 'dotenv/config';
 import app from './app.js';
+import { env } from './config/env.js';
 import logger from './config/logger.js';
 
-const PORT = process.env.PORT || 8080;
-
-const server = app.listen(PORT, () => {
-    logger.info(`Servidor corriendo en el puerto: ${PORT}`);
+const server = app.listen(env.PORT, env.HOST, () => {
+    logger.info(`Servidor corriendo en http://${env.HOST}:${env.PORT}`);
 });
 
 server.on('error', (error) => {
