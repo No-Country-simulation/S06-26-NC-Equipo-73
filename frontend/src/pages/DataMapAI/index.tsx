@@ -3,6 +3,7 @@ import { MapLayout } from "./components/MapLayout";
 import { Marker, Popup } from "react-leaflet";
 import type { Servicio } from "./types";
 import { useState } from "react";
+import { Chat } from "./components/Chat";
 
 const DataMapAI = () => {
     const [servicios, setServicios] = useState<Servicio[]>([
@@ -13,8 +14,8 @@ const DataMapAI = () => {
     { name: "EXP. estructurantes", isActive: false },
   ]);
     return (
-        <div className="grid grid-cols-12 grid-rows-5 gap-4 h-screen">
-            <div className="col-span-8  flex flex-col gap-4 p-4">
+        <div className="grid grid-cols-12 grid-rows-6 gap-4 h-screen">
+            <div className="col-span-9 col-start-1 row-start-1  flex flex-col  p-4">
                 <h2 className="text-xl font-bold">Seleccion de servicio:</h2>
                 <Buttons servicios={servicios} setServicios={setServicios} />
             </div>
@@ -23,7 +24,9 @@ const DataMapAI = () => {
                     <Popup>Brasil</Popup>
                 </Marker>
             </MapLayout>
-            <aside className="col-span-4 row-span-5 col-start-9 bg-red-400"></aside>
+            <Chat >
+
+            </Chat>
         </div>
     );
 };

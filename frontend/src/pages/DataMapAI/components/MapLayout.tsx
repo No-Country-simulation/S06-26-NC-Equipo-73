@@ -22,7 +22,7 @@ const SetInitialView = () => {
 
 export const MapLayout = ({ children }: MapLayoutProps) => {
   return (
-    <MapContainer className=" col-span-8 row-span-4 row-start-2  " center={center} zoom={zoom} scrollWheelZoom={true}>
+    <MapContainer className="col-span-9 row-span-5 row-start-2  " center={center} zoom={zoom} scrollWheelZoom={true}>
       <SetInitialView />
       <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
       
