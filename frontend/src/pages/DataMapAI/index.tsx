@@ -14,7 +14,7 @@ const DataMapAI = () => {
     { name: "EXP. estructurantes", isActive: false },
   ]);
     return (
-        <div className="grid grid-cols-12 grid-rows-6 gap-4 h-screen">
+        <div className="grid grid-cols-12 grid-rows-6  h-screen">
             <div className="col-span-9 col-start-1 row-start-1  flex flex-col  p-4">
                 <h2 className="text-xl font-bold">Seleccion de servicio:</h2>
                 <Buttons servicios={servicios} setServicios={setServicios} />
