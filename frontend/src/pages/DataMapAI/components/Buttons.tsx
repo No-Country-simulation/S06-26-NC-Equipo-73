@@ -10,9 +10,11 @@ export const Buttons = ({ servicios, setServicios }: Props) => {
   const handleClick = (name: string) => {
     setServicios((prev) =>
       prev.map((servicio) =>
-        servicio.name === name
-          ? { ...servicio, isActive: !servicio.isActive }
-          : servicio
+        // servicio.name === name
+        //   ? { ...servicio, isActive: !servicio.isActive }
+        //   : servicio // => seleccionador de varios servicios
+          ({   ...servicio,
+        isActive: servicio.name === name,}) // => selecor de un solo servicio
       )
     );
   };
