@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 interface MapLayoutProps {
   children?: ReactNode;
+  className?: string;
 }
 
 const center: LatLngExpression = [-8.591089048076533, -55.23889767670842];
@@ -20,12 +21,16 @@ const SetInitialView = () => {
   return null;
 };
 
-export const MapLayout = ({ children }: MapLayoutProps) => {
+export const MapLayout = ({ children, className }: MapLayoutProps) => {
   return (
-    <MapContainer className=" col-span-9 row-span-5 row-start-2  w-full" center={center} zoom={zoom} scrollWheelZoom={true}>
+    <MapContainer
+      className={`w-full ${className ?? ""}`}
+      center={center}
+      zoom={zoom}
+      scrollWheelZoom={true}
+    >
       <SetInitialView />
       <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-      
       {children}
     </MapContainer>
   );
