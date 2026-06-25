@@ -1,0 +1,798 @@
+database:
+  host: localhost
+  port: 5432
+  database: loaddb
+  user: postgres
+  password: password
+
+default_import: municipios
+
+imports:
+  municipios:
+    csv:
+      file_path: data/small/municipios.csv
+      encoding: latin1
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_municipios
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: municipios
+      mode: replace
+      primary_key: codigo_ibge
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      # max_rows: 100
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      CÓDIGO DO MUNICÍPIO - TOM:
+        target: codigo_tom
+        required: true
+        type: integer
+
+      CÓDIGO DO MUNICÍPIO - IBGE:
+        target: codigo_ibge
+        required: true
+        type: integer
+
+      MUNICÍPIO - TOM:
+        target: nombre_tom
+        required: true
+        transform: initcap_trim
+
+      MUNICÍPIO - IBGE:
+        target: nombre
+        required: true
+        transform: initcap_trim
+
+      UF:
+        target: uf
+        required: true
+        transform: upper_trim
+
+  antenas:
+    csv:
+      file_path: data/small/antenas_flp.csv
+      encoding: utf8
+      delimiter: ","
+
+    staging:
+      schema: public
+      table: stg_antenas_flp
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: antenas_flp
+      mode: replace
+      primary_key: ecgi
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      # max_rows: 100
+      debug: true
+      debug_every_rows: 100000
+
+    dimensions:
+      municipios:
+        schema: public
+        table: municipios
+        key_column: codigo_ibge
+        value_column: nombre
+        transform: ascii_lower_trim
+        lookup_transform: ascii_lower_trim
+        create_table: false
+        create_missing: false
+
+    columns:
+      ecgi:
+        target: ecgi
+        required: true
+        type: bigint
+
+      cluster:
+        target: cluster
+        required: true
+        transform: upper_trim
+
+      municipio:
+        target: municipio_codigo
+        required: true
+        dimension: municipios
+
+      lat:
+        target: lat
+        required: true
+        type: numeric
+
+      lon:
+        target: lon
+        required: true
+        type: numeric
+
+  mobilidade:
+    csv:
+      file_path: data/large/tensor_mobilidade.csv
+      encoding: utf8
+      delimiter: ","
+
+    staging:
+      schema: public
+      table: stg_mobilidade
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: mobilidade
+      mode: replace
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      max_rows: 1000
+      debug: true
+      debug_every_rows: 100000
+
+    dimensions:
+      municipios:
+        schema: public
+        table: municipios
+        key_column: codigo_ibge
+        value_column: nombre
+        transform: ascii_lower_trim
+        lookup_transform: ascii_lower_trim
+        create_table: false
+        create_missing: false
+
+    columns:
+      assinante_hash:
+        target: assinante_hash
+        required: true
+        type: bigint
+
+      day_date:
+        target: day_date
+        required: true
+        type: date
+        transform: date_ymd
+
+      ecgi:
+        target: ecgi
+        required: true
+        type: bigint
+        references:
+          schema: public
+          table: antenas_flp
+          column: ecgi
+
+      cluster:
+        target: cluster
+        required: true
+        transform: upper_trim
+
+      municipio:
+        target: municipio_codigo
+        required: true
+        dimension: municipios
+
+      rg_type:
+        target: rg_type
+        required: true
+        transform: upper_trim
+
+      rat_type:
+        target: rat_type
+        required: true
+        transform: upper_trim
+
+      periodo_sessao:
+        target: periodo_sessao
+        required: true
+        transform: upper_trim
+
+      n_sessoes:
+        target: n_sessoes
+        required: true
+        type: integer
+        min: 0
+
+      dur_total_s:
+        target: dur_total_s
+        required: true
+        type: integer
+        min: 0
+
+      download_bytes:
+        target: download_bytes
+        required: true
+        type: bigint
+        min: 0
+
+      upload_bytes:
+        target: upload_bytes
+        required: true
+        type: bigint
+        min: 0
+
+      drop_pct:
+        target: drop_pct
+        required: true
+        type: numeric
+        min: 0
+
+      congestionamento:
+        target: congestionamento
+        required: true
+        type: numeric
+        min: 0
+
+      chamadas:
+        target: chamadas
+        required: true
+        type: integer
+        min: 0
+
+      conversacao_seg:
+        target: conversacao_seg
+        required: true
+        type: integer
+        min: 0
+
+      completamento_voz:
+        target: completamento_voz
+        required: true
+        type: numeric
+        min: 0
+
+      cong_voz:
+        target: cong_voz
+        required: true
+        type: numeric
+        min: 0
+
+      mensagens:
+        target: mensagens
+        required: true
+        type: integer
+        min: 0
+
+      completamento_sms:
+        target: completamento_sms
+        required: true
+        type: numeric
+        min: 0
+
+      cong_sms:
+        target: cong_sms
+        required: true
+        type: numeric
+        min: 0
+
+      rg_streaming:
+        target: rg_streaming
+        required: true
+        type: integer
+        min: 0
+
+      rg_game:
+        target: rg_game
+        required: true
+        type: integer
+        min: 0
+
+      rg_social:
+        target: rg_social
+        required: true
+        type: integer
+        min: 0
+
+      rg_comunicacao:
+        target: rg_comunicacao
+        required: true
+        type: integer
+        min: 0
+
+      rg_outros:
+        target: rg_outros
+        required: true
+        type: integer
+        min: 0
+
+      income_cluster:
+        target: income_cluster
+        required: true
+        transform: upper_trim
+
+      age_group:
+        target: age_group
+        required: true
+        transform: trim
+
+      flag_flagship:
+        target: flag_flagship
+        required: true
+        type: integer
+
+  cursos:
+    csv:
+      file_path: data/large/MICRODADOS_CADASTRO_CURSOS_2024.CSV
+      encoding: latin1
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_cursos_2024
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: cursos_2024
+      mode: replace
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      max_rows: 100000
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      NU_ANO_CENSO:
+        target: anio_censo
+        required: true
+        type: integer
+
+      NO_REGIAO:
+        target: region
+        transform: initcap_trim
+
+      CO_REGIAO:
+        target: codigo_region
+        type: integer
+
+      NO_UF:
+        target: estado
+        transform: initcap_trim
+
+      SG_UF:
+        target: uf
+        transform: upper_trim
+
+      CO_UF:
+        target: codigo_uf
+        type: integer
+
+      NO_MUNICIPIO:
+        target: municipio
+        transform: initcap_trim
+
+      CO_MUNICIPIO:
+        target: codigo_municipio
+        required: true
+        type: integer
+
+      IN_CAPITAL:
+        target: es_capital
+        type: integer
+
+      CO_IES:
+        target: codigo_institucion
+        type: integer
+
+      CO_CURSO:
+        target: codigo_curso
+        required: true
+        type: integer
+
+      NO_CURSO:
+        target: nombre_curso
+        required: true
+        transform: initcap_trim
+
+      TP_ORGANIZACAO_ACADEMICA:
+        target: tipo_organizacion_academica
+        type: integer
+
+      TP_REDE:
+        target: tipo_red
+        type: integer
+
+      TP_CATEGORIA_ADMINISTRATIVA:
+        target: categoria_administrativa
+        type: integer
+
+      NO_CINE_ROTULO:
+        target: rotulo_cine
+        transform: initcap_trim
+
+      CO_CINE_ROTULO:
+        target: codigo_rotulo_cine
+        transform: trim
+
+      CO_CINE_AREA_GERAL:
+        target: codigo_area_general_cine
+        transform: trim
+
+      NO_CINE_AREA_GERAL:
+        target: area_general_cine
+        transform: initcap_trim
+
+      CO_CINE_AREA_ESPECIFICA:
+        target: codigo_area_especifica_cine
+        transform: trim
+
+      NO_CINE_AREA_ESPECIFICA:
+        target: area_especifica_cine
+        transform: initcap_trim
+
+      CO_CINE_AREA_DETALHADA:
+        target: codigo_area_detallada_cine
+        transform: trim
+
+      NO_CINE_AREA_DETALHADA:
+        target: area_detallada_cine
+        transform: initcap_trim
+
+      TP_GRAU_ACADEMICO:
+        target: grado_academico
+        type: integer
+
+      IN_GRATUITO:
+        target: es_gratuito
+        type: integer
+
+      TP_MODALIDADE_ENSINO:
+        target: modalidad_ensenanza
+        type: integer
+
+      TP_NIVEL_ACADEMICO:
+        target: nivel_academico
+        type: integer
+
+      QT_CURSO:
+        target: cantidad_cursos
+        type: integer
+        min: 0
+
+      QT_VG_TOTAL:
+        target: vacantes_total
+        type: integer
+        min: 0
+
+      QT_INSCRITO_TOTAL:
+        target: inscritos_total
+        type: integer
+        min: 0
+
+      QT_ING:
+        target: ingresantes_total
+        type: integer
+        min: 0
+
+      QT_MAT:
+        target: matriculados_total
+        type: integer
+        min: 0
+
+      QT_CONC:
+        target: concluyentes_total
+        type: integer
+        min: 0
+
+      QT_SIT_TRANCADA:
+        target: matriculas_trancadas
+        type: integer
+        min: 0
+
+      QT_SIT_DESVINCULADO:
+        target: desvinculados
+        type: integer
+        min: 0
+
+      QT_SIT_TRANSFERIDO:
+        target: transferidos
+        type: integer
+        min: 0
+
+      QT_SIT_FALECIDO:
+        target: fallecidos
+        type: integer
+        min: 0
+
+  ocupaciones_cbo:
+    csv:
+      file_path: data/small/cbo.csv
+      encoding: utf8
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_ocupaciones_cbo
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: ocupaciones_cbo
+      mode: replace
+      primary_key: codigo_ocupacion
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      codigo_ocupacion:
+        target: codigo_ocupacion
+        required: true
+        transform: trim
+
+      nombre_ocupacion:
+        target: nombre_ocupacion
+        required: true
+        transform: initcap_trim
+
+  clases_cnae:
+    csv:
+      file_path: data/small/clase.csv
+      encoding: utf8
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_clases_cnae
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: clases_cnae
+      mode: replace
+      primary_key: codigo_clase
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      codigo_clase:
+        target: codigo_clase
+        required: true
+        transform: trim
+
+      nombre_clase:
+        target: nombre_clase
+        required: true
+        transform: initcap_trim
+
+  subclases_cnae:
+    csv:
+      file_path: data/small/subclase.csv
+      encoding: utf8
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_subclases_cnae
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: subclases_cnae
+      mode: replace
+      primary_key: codigo_subclase
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      codigo_subclase:
+        target: codigo_subclase
+        required: true
+        transform: trim
+
+      nombre_subclase:
+        target: nombre_subclase
+        required: true
+        transform: initcap_trim
+
+  cagedest_012019:
+    csv:
+      file_path: data/large/CAGEDEST_012019.csv
+      encoding: latin1
+      delimiter: ";"
+
+    staging:
+      schema: public
+      table: stg_cagedest_012019
+      truncate_before_load: true
+
+    target:
+      schema: public
+      table: cagedest_012019
+      mode: replace
+
+    errors:
+      schema: public
+      table: import_errors
+
+    load:
+      dry_run: false
+      load_only: false
+      max_rows: 10000
+      debug: true
+      debug_every_rows: 100000
+
+    columns:
+      Admitidos/Desligados:
+        target: tipo_movimiento_admitido_desligado
+        required: true
+        transform: trim
+
+      Competência Declarada:
+        target: competencia_declarada
+        required: true
+        type: integer
+
+      Município:
+        target: codigo_municipio
+        required: true
+        type: integer
+
+      Ano Declarado:
+        target: anio_declarado
+        required: true
+        type: integer
+
+      CBO 2002 Ocupação:
+        target: codigo_ocupacion_cbo_2002
+        references:
+          schema: public
+          table: ocupaciones_cbo
+          column: codigo_ocupacion
+        transform: trim
+
+      CNAE 1.0 Classe:
+        target: codigo_clase_cnae_1
+        transform: trim
+
+      CNAE 2.0 Classe:
+        target: codigo_clase_cnae_2
+        references:
+          schema: public
+          table: clases_cnae
+          column: codigo_clase
+        transform: trim
+
+      CNAE 2.0 Subclas:
+        target: codigo_subclase_cnae_2
+        transform: trim
+
+      Faixa Empr Início Jan:
+        target: tramo_empleo_inicio_enero
+        transform: trim
+
+      Grau Instrução:
+        target: grado_instruccion
+        transform: trim
+
+      Qtd Hora Contrat:
+        target: horas_contratadas
+        type: integer
+        min: 0
+
+      IBGE Subsetor:
+        target: subsetor_ibge
+        transform: trim
+
+      Idade:
+        target: edad
+        type: integer
+        min: 0
+
+      Ind Aprendiz:
+        target: es_aprendiz
+        type: integer
+
+      Ind Portador Defic:
+        target: tiene_discapacidad
+        type: integer
+
+      Raça Cor:
+        target: raza_color
+        transform: trim
+
+      Salário Mensal:
+        target: salario_mensual
+        type: numeric
+        transform: numeric_comma
+        min: 0
+
+      Saldo Mov:
+        target: saldo_movimiento
+        type: integer
+
+      Sexo:
+        target: sexo
+        transform: trim
+
+      Tempo Emprego:
+        target: tiempo_empleo
+        type: numeric
+        transform: numeric_comma
+        min: 0
+
+      Tipo Estab:
+        target: tipo_establecimiento
+        transform: trim
+
+      Tipo Defic:
+        target: tipo_discapacidad
+        transform: trim
+
+      Tipo Mov Desagregado:
+        target: tipo_movimiento_desagregado
+        transform: trim
+
+      UF:
+        target: codigo_uf
+        required: true
+        type: integer
+
+      Mesorregião:
+        target: mesorregion
+        transform: trim
+
+      Microrregião:
+        target: microrregion
+        transform: trim
+
+      Ind Trab Parcial:
+        target: trabajo_parcial
+        type: integer
+
+      Ind Trab Intermitente:
+        target: trabajo_intermitente
+        type: integer

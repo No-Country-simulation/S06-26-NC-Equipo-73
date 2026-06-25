@@ -1,0 +1,26 @@
+{
+  "name": "node-csv-importer",
+  "version": "1.0.0",
+  "description": "Generic CSV importer for PostgreSQL using YAML import profiles.",
+  "main": "src/index.js",
+  "bin": {
+    "csv-importer": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "start:data": "node src/index.js --import municipios && node src/index.js --import antenas && node src/index.js --import mobilidade && node src/index.js --import cursos && node src/index.js --import ocupaciones_cbo && node src/index.js --import clases_cnae && node src/index.js --import subclases_cnae && node src/index.js --import cagedest_012019",
+    "start:cagedest": "node src/index.js --import ocupaciones_cbo && node src/index.js --import clases_cnae && node src/index.js --import subclases_cnae && node src/index.js --import cagedest_012019",
+    "start:ocupaciones-cbo": "node src/index.js --import ocupaciones_cbo",
+    "start:cnae": "node src/index.js --import clases_cnae && node src/index.js --import subclases_cnae"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "pg": "^8.12.0",
+    "pg-copy-streams": "^6.0.6",
+    "yaml": "^2.5.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
