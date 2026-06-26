@@ -120,3 +120,11 @@ Las rutas de `csv.file_path` son relativas a la carpeta `load-db-script`, aunque
 Los archivos VISENT viven bajo `visent/small` y `visent/large`.
 
 Los archivos externos viven bajo `external-sources/small` y `external-sources/large`. Los archivos grandes deben existir localmente con las rutas configuradas en cada perfil.
+
+## Fuentes
+
+RD202402: https://www.kaggle.com/datasets/andersonfranca/sistema-de-informaes-hospitalares-sus?select=RD202402.csv
+
+tensor_mobilidade: https://github.com/wongola-bit/appbit/blob/main/dataset-visent/tensores/LARGE_FILES.md
+
+CAGEDEST_012019: ftp://ftp.mtps.gov.br/pdet/microdados/
