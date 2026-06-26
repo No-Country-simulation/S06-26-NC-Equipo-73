@@ -121,7 +121,7 @@ Los archivos VISENT viven bajo `visent/small` y `visent/large`.
 
 Los archivos externos viven bajo `external-sources/small` y `external-sources/large`. Los archivos grandes deben existir localmente con las rutas configuradas en cada perfil.
 
-## Fuentes
+## Fuentes externas
 
 RD202402: https://www.kaggle.com/datasets/andersonfranca/sistema-de-informaes-hospitalares-sus?select=RD202402.csv
 
