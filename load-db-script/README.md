@@ -148,7 +148,7 @@ load:
 
 Si `max_rows` no esta definido, se procesan todas las filas del CSV.
 
-Tambien existe un comando de test. En modo test, cualquier import sin `load.max_rows` queda limitado a 1000 filas:
+Tambien existe un comando de test. En modo test, cualquier import sin `load.max_rows` queda limitado a 10000 filas:
 
 ```powershell
 npm run start:test
@@ -171,7 +171,7 @@ npm run start:prod
 Prioridad del limite de filas:
 
 1. `load.max_rows` en el YAML del import.
-2. `--mode test`, que usa 1000 filas.
+2. `--mode test`, que usa 10000 filas.
 3. Sin limite, se cargan todas las filas.
 
 ## Archivos De Datos

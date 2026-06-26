@@ -103,7 +103,7 @@ Options:
   --import <name>        Import profile under imports
   --all                  Run all imports in config.import_order
   --database-url <url>   PostgreSQL connection URL override
-  --mode <mode>          Load mode: test limits rows to 1000; production loads all
+  --mode <mode>          Load mode: test limits rows to 10000; production loads all
   --dry-run              Validate config and CSV without inserting
   --load-only            Load staging without validation/migration
   --debug                Print detailed progress logs
@@ -200,7 +200,7 @@ function resolveMaxRows(loadCfg, mode) {
   if (configuredMaxRows !== undefined) return configuredMaxRows;
 
   const loadMode = String(mode || process.env.LOAD_DB_MODE || "").trim().toLowerCase();
-  if (loadMode === "test") return 1000;
+  if (loadMode === "test") return 10000;
 
   return undefined;
 }

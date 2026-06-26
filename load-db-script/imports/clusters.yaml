@@ -21,25 +21,19 @@ load:
   load_only: false
   debug: true
   debug_every_rows: 100000
-dimensions:
-  municipios:
-    schema: public
-    table: municipios
-    key_column: codigo_ibge
-    value_column: nombre
-    transform: ascii_lower_trim
-    lookup_transform: ascii_lower_trim
-    create_table: false
-    create_missing: false
 columns:
   Cluster:
     target: cluster
     required: true
     transform: upper_trim
-  Municipio:
+  MunicipioCodigo:
     target: municipio_codigo
     required: true
-    dimension: municipios
+    type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_ibge
   Lat:
     target: latitud
     required: true
