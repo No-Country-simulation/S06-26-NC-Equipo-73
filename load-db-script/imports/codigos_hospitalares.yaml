@@ -1,0 +1,39 @@
+csv:
+  file_path: external-sources/small/dicionario_codigos_hospitalares.csv
+  encoding: utf8
+  delimiter: ;
+staging:
+  schema: public
+  table: stg_codigos_hospitalares
+  truncate_before_load: true
+target:
+  schema: public
+  table: codigos_hospitalares
+  mode: replace
+  primary_key:
+    - variable
+    - codigo
+errors:
+  schema: public
+  table: import_errors
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  variavel:
+    target: variable
+    required: true
+    transform: upper_trim
+  descricao:
+    target: descripcion
+    transform: trim
+  codigo:
+    target: codigo
+    required: true
+    type: integer
+  rotulo:
+    target: rotulo
+    required: true
+    transform: trim

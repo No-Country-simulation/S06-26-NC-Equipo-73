@@ -1,0 +1,30 @@
+csv:
+  file_path: external-sources/small/CAGEDEST-CLASE.csv
+  encoding: utf8
+  delimiter: ;
+staging:
+  schema: public
+  table: stg_clases_cnae
+  truncate_before_load: true
+target:
+  schema: public
+  table: clases_cnae
+  mode: replace
+  primary_key: codigo_clase
+errors:
+  schema: public
+  table: import_errors
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  codigo_clase:
+    target: codigo_clase
+    required: true
+    transform: trim
+  nombre_clase:
+    target: nombre_clase
+    required: true
+    transform: initcap_trim

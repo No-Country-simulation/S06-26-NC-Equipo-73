@@ -21,6 +21,7 @@ const EMAIL_REGEX = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$";
 const INTEGER_REGEX = "^[+-]?[0-9]+$";
 const NUMERIC_REGEX = "^[+-]?[0-9]+([,.][0-9]+)?$";
 const DATE_YMD_REGEX = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+const DATE_YYYYMMDD_REGEX = "^[0-9]{8}$";
 
 function parseBool(value) {
   if (typeof value === "boolean") return value;
@@ -110,12 +111,50 @@ function loadConfig(configPath) {
     throw new Error(`Config file not found: ${absolutePath}`);
   }
 
+  const configDir = path.dirname(absolutePath);
   const raw = fs.readFileSync(absolutePath, "utf8");
   const config = YAML.parse(raw) || {};
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error("The YAML config root must be a mapping/object.");
   }
-  return { config, configDir: path.dirname(absolutePath) };
+
+  if (config.imports_dir) {
+    config.imports = {
+      ...(config.imports || {}),
+      ...loadImportsDir(configDir, String(config.imports_dir))
+    };
+  }
+
+  return { config, configDir };
+}
+
+function loadImportsDir(configDir, importsDir) {
+  const absoluteImportsDir = path.resolve(configDir, importsDir);
+  if (!fs.existsSync(absoluteImportsDir)) {
+    throw new Error(`imports_dir not found: ${absoluteImportsDir}`);
+  }
+  if (!fs.statSync(absoluteImportsDir).isDirectory()) {
+    throw new Error(`imports_dir is not a directory: ${absoluteImportsDir}`);
+  }
+
+  const imports = {};
+  const files = fs.readdirSync(absoluteImportsDir)
+    .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
+    .sort((left, right) => left.localeCompare(right));
+
+  for (const file of files) {
+    const importName = path.basename(file, path.extname(file));
+    if (importName in imports) {
+      throw new Error(`Duplicate import profile '${importName}' in imports_dir.`);
+    }
+
+    const importPath = path.join(absoluteImportsDir, file);
+    const raw = fs.readFileSync(importPath, "utf8");
+    const profile = YAML.parse(raw) || {};
+    imports[importName] = ensureObject(profile, `imports_dir.${file}`);
+  }
+
+  return imports;
 }
 
 function getConfigValue(config, dottedKey, defaultValue = undefined) {
@@ -561,6 +600,7 @@ function transformSqlExpr(expression, transform, valueType) {
   if (transform === "integer") return `${nullIfEmpty}::integer`;
   if (transform === "bigint") return `${nullIfEmpty}::bigint`;
   if (transform === "date_ymd") return `to_date(${nullIfEmpty}, 'YYYY-MM-DD')`;
+  if (transform === "date_yyyymmdd") return `to_date(${nullIfEmpty}, 'YYYYMMDD')`;
 
   if (valueType === "numeric") return `replace(${nullIfEmpty}, ',', '.')::numeric`;
   if (valueType === "integer") return `${nullIfEmpty}::integer`;
@@ -589,6 +629,7 @@ function dimensionLookupCondition(dimension, dimensionAlias, valueExpr) {
 function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, target, dimensions) {
   const alias = "s";
   const source = col(alias, sourceColumn);
+  const trimmed = `btrim(${source})`;
   const targetColumn = String(rule.target || sourceColumn);
   const errors = [];
 
@@ -598,19 +639,20 @@ function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, t
 
   if (rule.type === "email") {
     errors.push(
-      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${source} !~* ${sqlLiteral(EMAIL_REGEX)} THEN ${sqlLiteral(`${sourceColumn} email invalido`)} END`
+      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${trimmed} !~* ${sqlLiteral(EMAIL_REGEX)} THEN ${sqlLiteral(`${sourceColumn} email invalido`)} END`
     );
   } else if (rule.type === "numeric") {
     errors.push(
-      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${source} !~ ${sqlLiteral(NUMERIC_REGEX)} THEN ${sqlLiteral(`${sourceColumn} numerico invalido`)} END`
+      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${trimmed} !~ ${sqlLiteral(NUMERIC_REGEX)} THEN ${sqlLiteral(`${sourceColumn} numerico invalido`)} END`
     );
   } else if (rule.type === "integer" || rule.type === "bigint") {
     errors.push(
-      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${source} !~ ${sqlLiteral(INTEGER_REGEX)} THEN ${sqlLiteral(`${sourceColumn} entero invalido`)} END`
+      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${trimmed} !~ ${sqlLiteral(INTEGER_REGEX)} THEN ${sqlLiteral(`${sourceColumn} entero invalido`)} END`
     );
   } else if (rule.type === "date") {
+    const dateRegex = rule.transform === "date_yyyymmdd" ? DATE_YYYYMMDD_REGEX : DATE_YMD_REGEX;
     errors.push(
-      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${source} !~ ${sqlLiteral(DATE_YMD_REGEX)} THEN ${sqlLiteral(`${sourceColumn} fecha invalida`)} END`
+      `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${trimmed} !~ ${sqlLiteral(dateRegex)} THEN ${sqlLiteral(`${sourceColumn} fecha invalida`)} END`
     );
   } else if (rule.type && rule.type !== "text") {
     throw new Error(`Unsupported type for ${sourceColumn}: ${rule.type}`);
@@ -660,10 +702,13 @@ function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, t
     const ref = ensureObject(rule.references, `${sourceColumn}.references`);
     const refSql = qualifiedTable(String(ref.schema || DEFAULT_SCHEMA), String(ref.table));
     const transformed = transformExpr(alias, sourceColumn, rule.transform, rule.type);
+    const fixedConditions = Object.entries(ensureObject(ref.where || {}, `${sourceColumn}.references.where`))
+      .map(([column, value]) => `${col("r", column)} = ${sqlLiteral(value)}`);
+    const conditions = [`${col("r", String(ref.column))} = ${transformed}`, ...fixedConditions];
     errors.push(
       `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND NOT EXISTS (` +
         `SELECT 1 FROM ${refSql} ${quoteIdent("r")} ` +
-        `WHERE ${col("r", String(ref.column))} = ${transformed}` +
+        `WHERE ${conditions.join(" AND ")}` +
         `) THEN ${sqlLiteral(`${sourceColumn} referencia inexistente`)} END`
     );
   }

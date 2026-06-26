@@ -14,18 +14,7 @@ npm install
 
 ## Configuracion
 
-La configuracion principal esta en `config.yaml`.
-
-Cada perfil bajo `imports` define:
-
-- `csv`: ruta, encoding y delimitador del archivo.
-- `staging`: tabla temporal de carga.
-- `target`: tabla destino y modo de carga.
-- `columns`: columnas del CSV que se validan y migran.
-- `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
-- `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
-
-La conexion a PostgreSQL puede configurarse en `config.yaml`:
+La configuracion principal esta en `config.yaml`. Ese archivo solo debe contener la conexion, el import por defecto y la carpeta de perfiles:
 
 ```yaml
 database:
@@ -34,7 +23,26 @@ database:
   database: loaddb
   user: postgres
   password: password
+
+default_import: municipios
+imports_dir: imports
 ```
+
+Cada perfil vive en un archivo dentro de `imports/`. El nombre del archivo es el nombre del import. Por ejemplo:
+
+```text
+imports/municipios.yaml      -> --import municipios
+imports/rd_202402.yaml       -> --import rd_202402
+```
+
+Cada perfil define:
+
+- `csv`: ruta, encoding y delimitador del archivo.
+- `staging`: tabla temporal de carga.
+- `target`: tabla destino y modo de carga.
+- `columns`: columnas del CSV que se validan y migran.
+- `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
+- `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
 
 Tambien puede sobrescribirse por comando:
 
@@ -107,7 +115,8 @@ Si `max_rows` no esta definido, se procesan todas las filas del CSV.
 
 ## Archivos De Datos
 
-Los archivos livianos viven en `data/small`.
+Las rutas de `csv.file_path` son relativas a la carpeta `load-db-script`, aunque el perfil este dentro de `imports/`.
 
-Los archivos grandes viven en `data/large`. Para ejecutar deben existir localmente con las rutas configuradas en `config.yaml`.
+Los archivos VISENT viven bajo `visent/small` y `visent/large`.
 
+Los archivos externos viven bajo `external-sources/small` y `external-sources/large`. Los archivos grandes deben existir localmente con las rutas configuradas en cada perfil.

@@ -1,0 +1,42 @@
+csv:
+  file_path: visent/small/municipios.csv
+  encoding: latin1
+  delimiter: ;
+staging:
+  schema: public
+  table: stg_municipios
+  truncate_before_load: true
+target:
+  schema: public
+  table: municipios
+  mode: replace
+  primary_key: codigo_ibge
+errors:
+  schema: public
+  table: import_errors
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  CÓDIGO DO MUNICÍPIO - TOM:
+    target: codigo_tom
+    required: true
+    type: integer
+  CÓDIGO DO MUNICÍPIO - IBGE:
+    target: codigo_ibge
+    required: true
+    type: integer
+  MUNICÍPIO - TOM:
+    target: nombre_tom
+    required: true
+    transform: initcap_trim
+  MUNICÍPIO - IBGE:
+    target: nombre
+    required: true
+    transform: initcap_trim
+  UF:
+    target: uf
+    required: true
+    transform: upper_trim

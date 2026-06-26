@@ -1,0 +1,113 @@
+csv:
+  file_path: visent/small/tensor_concentracao.csv
+  encoding: utf8
+  delimiter: ","
+staging:
+  schema: public
+  table: stg_tensor_concentracao
+  truncate_before_load: true
+target:
+  schema: public
+  table: tensor_concentracao
+  mode: replace
+errors:
+  schema: public
+  table: import_errors
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+dimensions:
+  municipios:
+    schema: public
+    table: municipios
+    key_column: codigo_ibge
+    value_column: nombre
+    transform: ascii_lower_trim
+    lookup_transform: ascii_lower_trim
+    create_table: false
+    create_missing: false
+columns:
+  ecgi:
+    target: ecgi
+    required: true
+    type: bigint
+    references:
+      schema: public
+      table: antenas_flp
+      column: ecgi
+  cluster:
+    target: cluster
+    required: true
+    references:
+      schema: public
+      table: clusters
+      column: cluster
+    transform: upper_trim
+  municipio:
+    target: municipio_codigo
+    required: true
+    dimension: municipios
+  day_date:
+    target: day_date
+    required: true
+    type: date
+    transform: date_ymd
+  periodo:
+    target: periodo
+    required: true
+    transform: upper_trim
+  n_usuarios:
+    target: n_usuarios
+    required: true
+    type: integer
+    min: 0
+  n_sessoes:
+    target: n_sessoes
+    required: true
+    type: integer
+    min: 0
+  download_bytes:
+    target: download_bytes
+    required: true
+    type: bigint
+    min: 0
+  upload_bytes:
+    target: upload_bytes
+    required: true
+    type: bigint
+    min: 0
+  dur_media_s:
+    target: duracion_media_s
+    required: true
+    type: numeric
+    min: 0
+  drop_pct_medio:
+    target: drop_pct_medio
+    required: true
+    type: numeric
+    min: 0
+  congestionamento_medio:
+    target: congestionamiento_medio
+    required: true
+    type: numeric
+    min: 0
+  chamadas_total:
+    target: llamadas_total
+    required: true
+    type: integer
+    min: 0
+  mensagens_total:
+    target: mensajes_total
+    required: true
+    type: integer
+    min: 0
+  lat:
+    target: latitud
+    required: true
+    type: numeric
+  lon:
+    target: longitud
+    required: true
+    type: numeric

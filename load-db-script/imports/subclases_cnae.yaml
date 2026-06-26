@@ -1,0 +1,30 @@
+csv:
+  file_path: external-sources/small/CAGEDEST-SUBCLASE.csv
+  encoding: utf8
+  delimiter: ;
+staging:
+  schema: public
+  table: stg_subclases_cnae
+  truncate_before_load: true
+target:
+  schema: public
+  table: subclases_cnae
+  mode: replace
+  primary_key: codigo_subclase
+errors:
+  schema: public
+  table: import_errors
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  codigo_subclase:
+    target: codigo_subclase
+    required: true
+    transform: trim
+  nombre_subclase:
+    target: nombre_subclase
+    required: true
+    transform: initcap_trim
