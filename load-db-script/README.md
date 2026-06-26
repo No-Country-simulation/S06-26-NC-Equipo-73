@@ -26,6 +26,10 @@ database:
 
 default_import: municipios
 imports_dir: imports
+import_order:
+  - municipios
+  - clusters
+  - antenas
 ```
 
 Cada perfil vive en un archivo dentro de `imports/`. El nombre del archivo es el nombre del import. Por ejemplo:
@@ -43,6 +47,30 @@ Cada perfil define:
 - `columns`: columnas del CSV que se validan y migran.
 - `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
 - `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
+
+En `target` se puede usar `skip_if_exists: true` para no cargar un import cuando la tabla destino ya existe:
+
+```yaml
+target:
+  schema: public
+  table: municipios
+  mode: replace
+  skip_if_exists: true
+```
+
+Esta verificacion mira solo si la tabla existe. Una tabla vacia tambien sera omitida si `skip_if_exists` esta activo.
+
+En `staging`, `drop_after_load: true` elimina la tabla staging al terminar una importacion exitosa:
+
+```yaml
+staging:
+  schema: public
+  table: stg_municipios
+  truncate_before_load: true
+  drop_after_load: true
+```
+
+Si la importacion falla, la tabla staging no se elimina.
 
 Tambien puede sobrescribirse por comando:
 
@@ -62,6 +90,12 @@ Ejecutar un perfil especifico:
 
 ```powershell
 node src\index.js --import municipios
+```
+
+Ejecutar todos los perfiles en el orden definido por `import_order`:
+
+```powershell
+node src\index.js --all
 ```
 
 Validar sin insertar datos:
@@ -93,10 +127,11 @@ node src\index.js .\ruta\archivo.csv --import municipios
 Hay comandos npm para ejecutar grupos de imports en orden:
 
 ```powershell
-npm run start:data
+npm run start:prod
 ```
 
 Estos comandos son utiles cuando un import depende de tablas cargadas antes, como catalogos o dimensiones.
+El orden de carga se define en `config.yaml`, dentro de `import_order`.
 
 ## Pruebas Con Muestras
 
@@ -112,6 +147,32 @@ load:
 ```
 
 Si `max_rows` no esta definido, se procesan todas las filas del CSV.
+
+Tambien existe un comando de test. En modo test, cualquier import sin `load.max_rows` queda limitado a 1000 filas:
+
+```powershell
+npm run start:test
+```
+
+Equivale a:
+
+```powershell
+node src\index.js --all --mode test
+```
+
+En produccion se cargan todas las filas:
+
+```powershell
+npm run start:prod
+```
+
+`npm run start` es un alias de `npm run start:prod`.
+
+Prioridad del limite de filas:
+
+1. `load.max_rows` en el YAML del import.
+2. `--mode test`, que usa 1000 filas.
+3. Sin limite, se cargan todas las filas.
 
 ## Archivos De Datos
 

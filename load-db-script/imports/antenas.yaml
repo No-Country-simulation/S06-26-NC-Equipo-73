@@ -6,11 +6,13 @@ staging:
   schema: public
   table: stg_antenas_flp
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: antenas_flp
   mode: replace
   primary_key: ecgi
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

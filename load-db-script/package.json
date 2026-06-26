@@ -7,11 +7,9 @@
     "csv-importer": "src/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "start:data": "node src/index.js --import municipios && node src/index.js --import clusters && node src/index.js --import antenas && node src/index.js --import tensor_concentracao && node src/index.js --import mobilidade && node src/index.js --import cursos && node src/index.js --import ocupaciones_cbo && node src/index.js --import clases_cnae && node src/index.js --import subclases_cnae && node src/index.js --import cagedest_012019 && node src/index.js --import codigos_hospitalares && node src/index.js --import rd_202402",
-    "start:clusters": "node src/index.js --import municipios && node src/index.js --import clusters",
-    "start:concentracao": "node src/index.js --import municipios && node src/index.js --import clusters && node src/index.js --import antenas && node src/index.js --import tensor_concentracao",
-    "start:hospitalares": "node src/index.js --import codigos_hospitalares && node src/index.js --import rd_202402"
+    "start": "npm run start:prod",
+    "start:prod": "node src/index.js --all",
+    "start:test": "node src/index.js --all --mode test"
   },
   "dependencies": {
     "csv-parse": "^5.5.6",

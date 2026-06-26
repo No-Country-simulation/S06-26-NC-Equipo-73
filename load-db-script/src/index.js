@@ -37,7 +37,9 @@ function parseArgs(argv) {
     databaseUrl: undefined,
     dryRun: false,
     loadOnly: false,
-    debug: false
+    debug: false,
+    all: false,
+    mode: undefined
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -46,8 +48,12 @@ function parseArgs(argv) {
       args.config = requireValue(argv, (index += 1), "--config");
     } else if (arg === "--import") {
       args.importName = requireValue(argv, (index += 1), "--import");
+    } else if (arg === "--all") {
+      args.all = true;
     } else if (arg === "--database-url") {
       args.databaseUrl = requireValue(argv, (index += 1), "--database-url");
+    } else if (arg === "--mode") {
+      args.mode = requireValue(argv, (index += 1), "--mode").trim().toLowerCase();
     } else if (arg === "--dry-run") {
       args.dryRun = true;
     } else if (arg === "--load-only") {
@@ -64,6 +70,16 @@ function parseArgs(argv) {
     } else {
       throw new Error(`Unexpected argument: ${arg}`);
     }
+  }
+
+  if (args.all && args.importName) {
+    throw new Error("--all cannot be combined with --import.");
+  }
+  if (args.all && args.csvFile) {
+    throw new Error("--all cannot be combined with a CSV file override.");
+  }
+  if (args.mode && !["test", "production", "prod"].includes(args.mode)) {
+    throw new Error("--mode must be 'test' or 'production'.");
   }
 
   return args;
@@ -85,7 +101,9 @@ Usage:
 Options:
   --config <path>        YAML config path. Default: config.yaml
   --import <name>        Import profile under imports
+  --all                  Run all imports in config.import_order
   --database-url <url>   PostgreSQL connection URL override
+  --mode <mode>          Load mode: test limits rows to 1000; production loads all
   --dry-run              Validate config and CSV without inserting
   --load-only            Load staging without validation/migration
   --debug                Print detailed progress logs
@@ -177,6 +195,16 @@ function parseOptionalPositiveInteger(value, name) {
   return parsed;
 }
 
+function resolveMaxRows(loadCfg, mode) {
+  const configuredMaxRows = parseOptionalPositiveInteger(loadCfg.max_rows, "load.max_rows");
+  if (configuredMaxRows !== undefined) return configuredMaxRows;
+
+  const loadMode = String(mode || process.env.LOAD_DB_MODE || "").trim().toLowerCase();
+  if (loadMode === "test") return 1000;
+
+  return undefined;
+}
+
 function normalizeEncoding(value) {
   const encoding = String(value || "utf8").toLowerCase();
   if (encoding === "utf-8-sig" || encoding === "utf-8") return "utf8";
@@ -218,6 +246,34 @@ function getImportProfile(config, importName) {
   return { importName: "default", profile: config };
 }
 
+function getAllImportNames(config) {
+  const imports = ensureObject(config.imports || {}, "imports");
+  const available = Object.keys(imports);
+  if (available.length === 0) throw new Error("No imports configured.");
+
+  const configuredOrder = config.import_order;
+  if (configuredOrder !== undefined) {
+    if (!Array.isArray(configuredOrder)) throw new Error("config.import_order must be a list.");
+    const names = configuredOrder.map((name) => String(name).trim()).filter(Boolean);
+    if (names.length === 0) throw new Error("config.import_order must include at least one import.");
+    if (new Set(names).size !== names.length) throw new Error("config.import_order contains duplicate imports.");
+
+    const missing = names.filter((name) => !(name in imports));
+    if (missing.length > 0) {
+      throw new Error(`config.import_order references unknown imports: ${missing.join(", ")}`);
+    }
+
+    const omitted = available.filter((name) => !names.includes(name));
+    if (omitted.length > 0) {
+      throw new Error(`config.import_order is missing configured imports: ${omitted.join(", ")}`);
+    }
+
+    return names;
+  }
+
+  return available.sort((left, right) => left.localeCompare(right));
+}
+
 function resolveSettings(args, config, configDir, profile) {
   const csvCfg = ensureObject(profile.csv || {}, "csv");
   const stagingCfg = ensureObject(profile.staging || {}, "staging");
@@ -239,11 +295,12 @@ function resolveSettings(args, config, configDir, profile) {
     stagingSchema: coalesce(stagingCfg.schema, DEFAULT_SCHEMA),
     stagingTable: stagingCfg.table,
     truncateBeforeLoad: parseBool(coalesce(stagingCfg.truncate_before_load, true)),
+    dropStagingAfterLoad: parseBool(coalesce(stagingCfg.drop_after_load, true)),
     dryRun: args.dryRun || parseBool(loadCfg.dry_run),
     loadOnly: args.loadOnly || parseBool(loadCfg.load_only),
     debug: args.debug || parseBool(loadCfg.debug),
     debugEveryRows: Number(coalesce(loadCfg.debug_every_rows, 100000)),
-    maxRows: parseOptionalPositiveInteger(loadCfg.max_rows, "load.max_rows"),
+    maxRows: resolveMaxRows(loadCfg, args.mode),
     target: profile.target,
     columns: profile.columns,
     dimensions: profile.dimensions,
@@ -472,10 +529,30 @@ async function truncateStaging(client, schema, table) {
   await client.query(`TRUNCATE TABLE ${qualifiedTable(schema, table)};`);
 }
 
+async function dropStaging(client, schema, table) {
+  await client.query(`DROP TABLE IF EXISTS ${qualifiedTable(schema, table)};`);
+}
+
 async function truncateTarget(client, target) {
   await client.query(
     `TRUNCATE TABLE ${qualifiedTable(String(target.schema || DEFAULT_SCHEMA), String(target.table))};`
   );
+}
+
+async function targetTableExists(client, target) {
+  if (!target || !target.table) return false;
+  const result = await client.query(
+    `
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = $1
+        AND table_name = $2
+    ) AS exists;
+    `,
+    [String(target.schema || DEFAULT_SCHEMA), String(target.table)]
+  );
+  return Boolean(result.rows[0]?.exists);
 }
 
 function escapeCopyCsvValue(value) {
@@ -1000,6 +1077,7 @@ async function processImport(args) {
     delimiter: settings.delimiter,
     staging: `${settings.stagingSchema}.${settings.stagingTable}`,
     truncateBeforeLoad: settings.truncateBeforeLoad,
+    dropStagingAfterLoad: settings.dropStagingAfterLoad,
     loadOnly: settings.loadOnly,
     dryRun: settings.dryRun,
     maxRows: settings.maxRows || "all",
@@ -1042,6 +1120,13 @@ async function processImport(args) {
   try {
     logger.info("Beginning transaction");
     await client.query("BEGIN");
+
+    if (target && parseBool(target.skip_if_exists) && await targetTableExists(client, target)) {
+      await client.query("COMMIT");
+      console.log(`Import skipped. import=${importName} target=${target.schema || DEFAULT_SCHEMA}.${target.table} already exists`);
+      return;
+    }
+
     logger.info("Ensuring staging table");
     await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, columns);
     if (settings.truncateBeforeLoad) {
@@ -1135,6 +1220,10 @@ async function processImport(args) {
 
     logger.info("Committing transaction");
     await client.query("COMMIT");
+    if (settings.dropStagingAfterLoad) {
+      logger.info("Dropping staging table after successful import");
+      await dropStaging(client, settings.stagingSchema, settings.stagingTable);
+    }
     console.log(`Import complete. import=${importName} staged=${staged} rejected=${rejected} migrated=${migrated}`);
   } catch (error) {
     logger.info("Rolling back transaction", { error: error.message });
@@ -1146,7 +1235,26 @@ async function processImport(args) {
   }
 }
 
-processImport(parseArgs(process.argv.slice(2))).catch((error) => {
+async function processAllImports(args) {
+  const { config } = loadConfig(args.config);
+  const importNames = getAllImportNames(config);
+
+  for (const importName of importNames) {
+    console.log(`\n== Import ${importName} ==`);
+    await processImport({ ...args, all: false, importName });
+  }
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.all) {
+    await processAllImports(args);
+  } else {
+    await processImport(args);
+  }
+}
+
+main().catch((error) => {
   console.error(`ERROR: ${error.message}`);
   process.exitCode = 1;
 });

@@ -6,11 +6,13 @@ staging:
   schema: public
   table: stg_ocupaciones_cbo
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: ocupaciones_cbo
   mode: replace
   primary_key: codigo_ocupacion
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

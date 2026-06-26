@@ -6,11 +6,13 @@ staging:
   schema: public
   table: stg_clusters
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: clusters
   mode: replace
   primary_key: cluster
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

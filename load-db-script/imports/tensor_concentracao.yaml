@@ -6,10 +6,12 @@ staging:
   schema: public
   table: stg_tensor_concentracao
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: tensor_concentracao
   mode: replace
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

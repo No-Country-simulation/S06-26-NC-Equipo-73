@@ -6,6 +6,7 @@ staging:
   schema: public
   table: stg_codigos_hospitalares
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: codigos_hospitalares
@@ -13,6 +14,7 @@ target:
   primary_key:
     - variable
     - codigo
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

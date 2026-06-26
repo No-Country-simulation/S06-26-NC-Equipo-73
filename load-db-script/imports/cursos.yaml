@@ -6,17 +6,18 @@ staging:
   schema: public
   table: stg_cursos_2024
   truncate_before_load: true
+  drop_after_load: true
 target:
   schema: public
   table: cursos_2024
   mode: replace
+  skip_if_exists: true
 errors:
   schema: public
   table: import_errors
 load:
   dry_run: false
   load_only: false
-  max_rows: 100000
   debug: true
   debug_every_rows: 100000
 columns:

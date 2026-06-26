@@ -6,3 +6,16 @@ database:
   password: password
 default_import: municipios
 imports_dir: imports
+import_order:
+  - municipios
+  - clusters
+  - antenas
+  - tensor_concentracao
+  - mobilidade
+  - cursos
+  - ocupaciones_cbo
+  - clases_cnae
+  - subclases_cnae
+  - cagedest_012019
+  - codigos_hospitalares
+  - rd_202402
