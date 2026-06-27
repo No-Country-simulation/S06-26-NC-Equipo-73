@@ -22,6 +22,7 @@ const itemAnim = {
 export default function HowItWorksSection() {
   return (
     <Section
+      id="como-funciona"
       title="Cómo Funciona"
       subtitle="Del dato a la decisión en cinco movimientos."
     >

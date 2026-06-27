@@ -55,6 +55,7 @@ const item = {
 export default function ProblemSection() {
   return (
     <Section
+      id="nosotros"
       title="Los datos existen. La visión integrada no."
       dark
     >

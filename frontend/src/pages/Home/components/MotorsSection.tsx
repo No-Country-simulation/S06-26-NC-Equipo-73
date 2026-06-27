@@ -57,6 +57,7 @@ const itemAnim = {
 export default function MotorsSection() {
   return (
     <Section
+      id="modulos"
       title="Los 5 Motores de Análisis"
       subtitle="Cada motor despliega inteligencia especializada para cubrir todas las dimensiones del desarrollo territorial."
       dark

@@ -7,6 +7,7 @@ export default function HeroSection() {
     <>
       {/* Desktop: two columns */}
       <section
+        id="bit-app"
         className="hidden min-h-screen w-full overflow-hidden lg:grid lg:grid-cols-12"
         style={{ backgroundColor: "var(--bg-main)" }}
       >
@@ -68,6 +69,7 @@ export default function HeroSection() {
 
       {/* Mobile: current structure unchanged */}
       <section
+        id="bit-app"
         className="relative h-screen w-full overflow-hidden lg:hidden"
         style={{ backgroundColor: "var(--bg-main)" }}
       >
