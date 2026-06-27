@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Section from "../../components/ui/Section";
+import Section from "../../../components/ui/Section";
 
 interface MotorProps {
   index: number;
@@ -71,7 +71,7 @@ export default function MotorsSection() {
         {motors.map((m) => (
           <motion.div
             key={m.title}
-            variants={itemAnim}
+            // variants={itemAnim}
             className="group relative flex flex-col rounded-sm p-6 transition-all duration-500"
             style={{
               backgroundColor: "var(--bg-surface)",

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Section from "../../components/ui/Section";
+import Section from "../../../components/ui/Section";
 
 const before = [
   "Datos fragmentados en Excel sin conexión entre sí.",

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Section from "../../components/ui/Section";
+import Section from "../../../components/ui/Section";
 
 export default function HeartSystemSection() {
   return (
