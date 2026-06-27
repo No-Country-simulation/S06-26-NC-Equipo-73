@@ -1,8 +1,8 @@
-import { motion } from "framer-motion";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { motion, type HTMLMotionProps } from "framer-motion";
+import type { ReactNode } from "react";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "ghost";
+interface ButtonProps extends HTMLMotionProps<"button"> {
+  variant?: "primary" | "ghost" | "bigPrimary" | "bigGhost";
   children: ReactNode;
 }
 
@@ -14,6 +14,10 @@ const variants = {
     "border border-transparent",
   ghost:
     "border",
+  bigPrimary:
+    "border border-transparent px-20 py-4",
+  bigGhost:
+    "border border-b-5 border-r-5 px-20 py-4", // border-t-0 border-l-0
 };
 
 export default function Button({
@@ -28,9 +32,9 @@ export default function Button({
       whileTap={{ scale: 0.98 }}
       className={`${base} ${variants[variant]} ${className}`}
       style={{
-        backgroundColor: variant === "primary" ? "var(--primary-accent)" : "transparent",
-        color: variant === "primary" ? "var(--bg-main)" : "var(--primary-accent)",
-        borderColor: variant === "ghost" ? "var(--primary-accent)" : undefined,
+        backgroundColor: variant === "primary" || variant === "bigPrimary" ? "var(--primary-accent)" : "transparent",
+        color: variant === "primary" || variant === "bigPrimary" ? "var(--bg-main)" : "var(--primary-accent)",
+        borderColor: variant === "ghost" || variant === "bigGhost" ? "var(--primary-accent)" : undefined,
       }}
       {...props}
     >

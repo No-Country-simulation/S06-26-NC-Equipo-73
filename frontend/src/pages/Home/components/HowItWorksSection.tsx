@@ -30,13 +30,13 @@ export default function HowItWorksSection() {
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-60px" }}
-        className="flex flex-col gap-8"
+        className="flex flex-col lg:flex-row gap-8 lg:gap-6 lg:items-stretch"
       >
         {steps.map((s) => (
           <motion.div
             key={s.num}
             variants={itemAnim}
-            className="flex items-start gap-6"
+            className="flex flex-row lg:flex-col items-start gap-6 lg:gap-4 lg:flex-1"
           >
             <div
               className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm text-lg font-bold"
@@ -47,7 +47,7 @@ export default function HowItWorksSection() {
             >
               {s.num}
             </div>
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-2 lg:pt-0">
               <h3
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-primary)" }}

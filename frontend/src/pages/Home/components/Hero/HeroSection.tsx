@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Button from "../../../components/ui/Button";
+import Button from "../../../../components/ui/Button";
 import HeroMap from "./HeroMap";
 
 export default function HeroSection() {
@@ -7,10 +7,10 @@ export default function HeroSection() {
     <>
       {/* Desktop: two columns */}
       <section
-        className="hidden min-h-screen w-full overflow-hidden lg:grid lg:grid-cols-2"
+        className="hidden min-h-screen w-full overflow-hidden lg:grid lg:grid-cols-12"
         style={{ backgroundColor: "var(--bg-main)" }}
       >
-        <div className="flex flex-col justify-center px-16 xl:px-24">
+        <div className="flex flex-col justify-center lg:col-span-5 pl-16 xl:pl-24 pr-8 lg:pr-10 xl:pr-12">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -24,12 +24,12 @@ export default function HeroSection() {
             </h1>
 
             <div
-              className="mt-8 h-px w-1/3"
+              className="mt-6 h-1 w-1/4"
               style={{ backgroundColor: "var(--primary-accent)" }}
             />
 
             <p
-              className="mt-8 max-w-xl text-lg leading-relaxed xl:text-xl"
+              className="mt-8 max-w-2xl text-lg leading-relaxed xl:text-xl"
               style={{ color: "var(--text-secondary)" }}
             >
               App BiT integra datos de conectividad, empleo, formación y salud
@@ -37,32 +37,30 @@ export default function HeroSection() {
               desigualdades antes de que se conviertan en problemas estructurales.
             </p>
 
-            <div className="mt-10 flex gap-4">
-              <Button variant="primary">ASISTENTE IA</Button>
-              <Button variant="ghost">MAPA INTERACTIVO</Button>
+            <div className="mt-8 flex gap-4">
+              <Button variant="bigGhost">ASISTENTE IA</Button>
+              <Button variant="bigPrimary">MAPA INTERACTIVO</Button>
             </div>
           </motion.div>
         </div>
 
-        <div className="flex flex-col justify-center px-16 xl:px-24">
+        <div className="flex flex-col justify-center lg:col-span-7 pr-16 xl:pr-24 pl-0">
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
             className="flex flex-col"
           >
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm"
-              style={{ border: "1px solid var(--border-subtle)" }}
+            <div className="relative aspect-[3/2] w-full overflow-hidden rounded-sm"
             >
               <HeroMap visible />
             </div>
 
             <p
-              className="mt-4 text-sm leading-relaxed"
+              className="mt-2 text-md font-semibold text-center "
               style={{ color: "var(--text-secondary)" }}
             >
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Datos precisos para decisiones públicas con impacto real
             </p>
           </motion.div>
         </div>
