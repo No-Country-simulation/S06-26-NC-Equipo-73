@@ -3,6 +3,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const crypto = require("node:crypto");
 const path = require("node:path");
 const readline = require("node:readline");
 const { Readable, Transform } = require("node:stream");
@@ -112,15 +113,118 @@ Options:
 
 function createLogger(enabled) {
   return {
+    enabled: Boolean(enabled),
     info(message, details = undefined) {
       if (!enabled) return;
+      const prefix = `[${new Date().toISOString()}] [debug]`;
       if (details === undefined) {
-        console.log(`[debug] ${message}`);
+        console.log(`${prefix} ${message}`);
       } else {
-        console.log(`[debug] ${message}`, details);
+        console.log(`${prefix} ${message}`, details);
       }
     }
   };
+}
+
+function elapsedSeconds(startedAt) {
+  return Math.round((Date.now() - startedAt) / 1000);
+}
+
+async function createProgressMonitor(databaseUrl, logger) {
+  if (!logger.enabled) return undefined;
+  const client = new Client({ connectionString: databaseUrl });
+  try {
+    await client.connect();
+    return client;
+  } catch (error) {
+    logger.info("PostgreSQL progress monitor unavailable", { error: error.message });
+    try { await client.end(); } catch { /* connection was not established */ }
+    return undefined;
+  }
+}
+
+async function readBackendProgress(monitorClient, backendPid, includeIndexProgress) {
+  if (!monitorClient || !backendPid) return {};
+  const activity = await monitorClient.query(
+    `SELECT state, wait_event_type, wait_event, pg_blocking_pids(pid) AS blocking_pids
+     FROM pg_stat_activity WHERE pid = $1;`,
+    [backendPid]
+  );
+  const row = activity.rows[0] || {};
+  const details = {
+    postgresState: row.state,
+    waitEventType: row.wait_event_type || undefined,
+    waitEvent: row.wait_event || undefined,
+    blockingPids: row.blocking_pids?.length ? row.blocking_pids : undefined
+  };
+
+  if (includeIndexProgress) {
+    const progress = await monitorClient.query(
+      `SELECT phase, lockers_total, lockers_done, blocks_total, blocks_done,
+              tuples_total, tuples_done
+       FROM pg_stat_progress_create_index WHERE pid = $1;`,
+      [backendPid]
+    );
+    const index = progress.rows[0];
+    if (index) {
+      details.indexPhase = index.phase;
+      const candidates = [
+        [Number(index.blocks_total), Number(index.blocks_done)],
+        [Number(index.tuples_total), Number(index.tuples_done)],
+        [Number(index.lockers_total), Number(index.lockers_done)]
+      ];
+      const [total, done] = candidates.find(([candidateTotal]) => candidateTotal > 0) || [0, 0];
+      if (total > 0) details.percent = Number(((done / total) * 100).toFixed(1));
+    }
+  }
+  return details;
+}
+
+async function runLoggedOperation({
+  logger,
+  label,
+  operation,
+  intervalMs,
+  monitorClient,
+  backendPid,
+  includeIndexProgress = false,
+  details = undefined
+}) {
+  const startedAt = Date.now();
+  logger.info(`${label} started`, details);
+  let active = true;
+  let tickRunning = false;
+  let activeTick;
+  let monitorErrorReported = false;
+  const tick = async () => {
+    if (!active || tickRunning) return;
+    tickRunning = true;
+    try {
+      const databaseProgress = await readBackendProgress(monitorClient, backendPid, includeIndexProgress);
+      if (active) logger.info(`${label} in progress`, { elapsedSeconds: elapsedSeconds(startedAt), ...databaseProgress });
+    } catch (error) {
+      if (active && !monitorErrorReported) {
+        logger.info(`${label} progress monitor failed`, { error: error.message });
+        monitorErrorReported = true;
+      }
+    } finally {
+      tickRunning = false;
+    }
+  };
+  const timer = logger.enabled ? setInterval(() => { activeTick = tick(); }, intervalMs) : undefined;
+  timer?.unref();
+  try {
+    const result = await operation();
+    logger.info(`${label} completed`, { elapsedSeconds: elapsedSeconds(startedAt) });
+    return result;
+  } catch (error) {
+    logger.info(`${label} failed`, { elapsedSeconds: elapsedSeconds(startedAt), error: error.message });
+    throw error;
+  } finally {
+    active = false;
+    if (timer) clearInterval(timer);
+    if (activeTick) await activeTick;
+  }
 }
 
 function loadConfig(configPath) {
@@ -300,6 +404,7 @@ function resolveSettings(args, config, configDir, profile) {
     loadOnly: args.loadOnly || parseBool(loadCfg.load_only),
     debug: args.debug || parseBool(loadCfg.debug),
     debugEveryRows: Number(coalesce(loadCfg.debug_every_rows, 100000)),
+    progressEverySeconds: Number(coalesce(loadCfg.progress_every_seconds, 30)),
     maxRows: resolveMaxRows(loadCfg, args.mode),
     target: profile.target,
     columns: profile.columns,
@@ -316,6 +421,9 @@ function resolveSettings(args, config, configDir, profile) {
   if (String(settings.delimiter).length !== 1) throw new Error("CSV delimiter must be exactly one character.");
   if (!Number.isInteger(settings.debugEveryRows) || settings.debugEveryRows < 0) {
     throw new Error("load.debug_every_rows must be a non-negative integer.");
+  }
+  if (!Number.isInteger(settings.progressEverySeconds) || settings.progressEverySeconds <= 0) {
+    throw new Error("load.progress_every_seconds must be a positive integer.");
   }
   return settings;
 }
@@ -360,6 +468,7 @@ function normalizeDimensions(dimensionsConfig) {
       transform: dimension.transform,
       lookupTransform: dimension.lookup_transform,
       type: dimension.type || "text",
+      keyType: dimension.key_type || "bigint",
       createTable: parseBool(coalesce(dimension.create_table, true)),
       createMissing: parseBool(coalesce(dimension.create_missing, true))
     };
@@ -485,6 +594,39 @@ function stagingColumns(csvColumns) {
   return [...csvColumns, SOURCE_COLUMN];
 }
 
+function normalizeLookup(rawLookup, sourceColumn) {
+  if (!rawLookup) return undefined;
+  const lookup = ensureObject(rawLookup, `columns.${sourceColumn}.lookup`);
+  for (const required of ["table", "source_column", "match_column", "value_column"]) {
+    if (!lookup[required]) throw new Error(`columns.${sourceColumn}.lookup.${required} is required.`);
+  }
+  return {
+    schema: String(lookup.schema || DEFAULT_SCHEMA),
+    table: String(lookup.table),
+    sourceColumn: String(lookup.source_column),
+    matchColumn: String(lookup.match_column),
+    valueColumn: String(lookup.value_column),
+    transform: lookup.transform,
+    lookupTransform: lookup.lookup_transform,
+    type: lookup.type || "text"
+  };
+}
+
+function projectedCsvColumns(csvColumns, columnsRules, dimensions, loadOnly) {
+  if (loadOnly || Object.keys(columnsRules).length === 0) return csvColumns;
+
+  const needed = new Set(Object.keys(columnsRules));
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    const lookup = normalizeLookup(rule.lookup, sourceColumn);
+    if (lookup) needed.add(lookup.sourceColumn);
+  }
+  for (const dimension of Object.values(dimensions)) {
+    if (dimension.sourceColumn) needed.add(dimension.sourceColumn);
+  }
+  return csvColumns.filter((column) => needed.has(column));
+}
+
 function sourceNameFromCsvPath(csvPath) {
   return path.basename(csvPath, path.extname(csvPath));
 }
@@ -570,7 +712,8 @@ async function copyCsvToStaging(
   client,
   schema,
   table,
-  columns,
+  csvColumns,
+  selectedColumns,
   csvPath,
   encoding,
   delimiter,
@@ -578,7 +721,7 @@ async function copyCsvToStaging(
   debugEveryRows,
   maxRows
 ) {
-  const copyColumns = stagingColumns(columns);
+  const copyColumns = stagingColumns(selectedColumns);
   const sourceName = sourceNameFromCsvPath(csvPath);
   const columnSql = copyColumns.map(quoteIdent).join(", ");
   const copySql =
@@ -586,9 +729,20 @@ async function copyCsvToStaging(
     "FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
 
   let copied = 0;
+  let bytesRead = 0;
+  const fileSize = fs.statSync(csvPath).size;
+  const copyStartedAt = Date.now();
+  const selected = new Set(selectedColumns);
+  const byteCounter = new Transform({
+    decodeStrings: false,
+    transform(chunk, _encoding, callback) {
+      bytesRead += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk, encoding);
+      callback(null, chunk);
+    }
+  });
   const parser = parse({
     bom: true,
-    columns,
+    columns: csvColumns.map((column) => selected.has(column) ? column : false),
     from_line: 2,
     delimiter,
     skip_empty_lines: false,
@@ -600,9 +754,20 @@ async function copyCsvToStaging(
     transform(record, _encoding, callback) {
       copied += 1;
       if (debugEveryRows > 0 && copied % debugEveryRows === 0) {
-        logger.info("COPY progress", { rowsCopied: copied });
+        const seconds = Math.max((Date.now() - copyStartedAt) / 1000, 0.001);
+        const progress = {
+          rowsCopied: copied,
+          rowsPerSecond: Math.round(copied / seconds),
+          elapsedSeconds: Math.round(seconds)
+        };
+        if (!maxRows && fileSize > 0) {
+          const percent = Math.min((bytesRead / fileSize) * 100, 100);
+          progress.percent = Number(percent.toFixed(1));
+          progress.etaSeconds = percent > 0 ? Math.max(0, Math.round(seconds * (100 - percent) / percent)) : undefined;
+        }
+        logger.info("COPY progress", progress);
       }
-      const values = columns.map((column) => escapeCopyCsvValue(record[column]));
+      const values = selectedColumns.map((column) => escapeCopyCsvValue(record[column]));
       values.push(escapeCopyCsvValue(sourceName));
       const line = values.join(",") + "\n";
       callback(null, line);
@@ -611,6 +776,7 @@ async function copyCsvToStaging(
 
   await pipeline(
     createCsvInputStream(csvPath, encoding, maxRows),
+    byteCounter,
     parser,
     toCopyCsv,
     client.query(copyFrom(copySql))
@@ -703,6 +869,25 @@ function dimensionLookupCondition(dimension, dimensionAlias, valueExpr) {
   return `${comparableDimensionValue} = ${valueExpr}`;
 }
 
+function lookupCondition(lookup, lookupAlias, valueExpr) {
+  const lookupValue = col(lookupAlias, lookup.matchColumn);
+  const comparableLookupValue = lookup.lookupTransform
+    ? transformSqlExpr(lookupValue, lookup.lookupTransform, lookup.type)
+    : lookupValue;
+  return `${comparableLookupValue} = ${valueExpr}`;
+}
+
+function lookupValueExpr(alias, sourceColumn, rule) {
+  const lookup = normalizeLookup(rule.lookup, sourceColumn);
+  if (!lookup) return undefined;
+  const sourceValue = transformExpr(alias, lookup.sourceColumn, lookup.transform, lookup.type);
+  return `(
+        SELECT ${col("lookup", lookup.valueColumn)}
+        FROM ${qualifiedTable(lookup.schema, lookup.table)} ${quoteIdent("lookup")}
+        WHERE ${lookupCondition(lookup, "lookup", sourceValue)}
+      )`;
+}
+
 function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, target, dimensions) {
   const alias = "s";
   const source = col(alias, sourceColumn);
@@ -790,16 +975,43 @@ function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, t
     );
   }
 
+  const lookup = normalizeLookup(rule.lookup, sourceColumn);
+  if (lookup) {
+    const lookupSql = qualifiedTable(lookup.schema, lookup.table);
+    const lookupSourceValue = transformExpr(alias, lookup.sourceColumn, lookup.transform, lookup.type);
+    errors.push(
+      `CASE WHEN ${nonEmptyCondition(alias, lookup.sourceColumn)} AND NOT EXISTS (` +
+        `SELECT 1 FROM ${lookupSql} ${quoteIdent("lookup")} ` +
+        `WHERE ${lookupCondition(lookup, "lookup", lookupSourceValue)}` +
+        `) THEN ${sqlLiteral(`${sourceColumn} lookup inexistente`)} END`
+    );
+
+    if (rule.dimension) {
+      const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
+      const dimensionSql = qualifiedTable(dimension.schema, dimension.table);
+      const dimensionValue = dimensionValueExpr(alias, sourceColumn, rule, dimensions);
+      errors.push(
+        `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND ${nonEmptyCondition(alias, lookup.sourceColumn)} AND NOT EXISTS (` +
+          `SELECT 1 FROM ${lookupSql} ${quoteIdent("lookup")} ` +
+          `JOIN ${dimensionSql} ${quoteIdent("dim")} ` +
+          `ON ${col("dim", dimension.keyColumn)} = ${col("lookup", lookup.valueColumn)} ` +
+          `WHERE ${lookupCondition(lookup, "lookup", lookupSourceValue)} ` +
+          `AND ${dimensionLookupCondition(dimension, "dim", dimensionValue)}` +
+          `) THEN ${sqlLiteral(`${sourceColumn} inconsistente con ${lookup.sourceColumn}`)} END`
+      );
+    }
+  }
+
   if (rule.dimension) {
     const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
     if (!dimension.createMissing) {
       const dimensionSql = qualifiedTable(dimension.schema, dimension.table);
       const transformed = dimensionValueExpr(alias, sourceColumn, rule, dimensions);
       errors.push(
-        `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND NOT EXISTS (` +
-          `SELECT 1 FROM ${dimensionSql} ${quoteIdent("dim")} ` +
+        `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND (` +
+          `SELECT count(*) FROM ${dimensionSql} ${quoteIdent("dim")} ` +
           `WHERE ${dimensionLookupCondition(dimension, "dim", transformed)}` +
-          `) THEN ${sqlLiteral(`${sourceColumn} dimension inexistente`)} END`
+          `) <> 1 THEN ${sqlLiteral(`${sourceColumn} dimension inexistente o ambigua`)} END`
       );
     }
   }
@@ -907,8 +1119,8 @@ async function populateDimensions(client, stagingSchema, stagingTable, columnsRu
 
 function targetColumnType(sourceColumn, rule, dimensions) {
   if (rule.dimension) {
-    getDimension(dimensions, String(rule.dimension), sourceColumn);
-    return "bigint";
+    const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
+    return String(rule.type || dimension.keyType);
   }
 
   if (rule.type === "integer") return "integer";
@@ -916,13 +1128,6 @@ function targetColumnType(sourceColumn, rule, dimensions) {
   if (rule.type === "numeric") return "numeric";
   if (rule.type === "date") return "date";
   return "text";
-}
-
-function targetColumnReference(sourceColumn, rule, dimensions) {
-  if (!rule.dimension) return "";
-
-  const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
-  return ` REFERENCES ${qualifiedTable(dimension.schema, dimension.table)} (${quoteIdent(dimension.keyColumn)})`;
 }
 
 function normalizePrimaryKey(target) {
@@ -975,9 +1180,8 @@ async function ensureTargetTable(client, target, columnsRules, dimensions) {
     const targetColumn = String(rule.target);
     const dataType = targetColumnType(sourceColumn, rule, dimensions);
     const nullable = parseBool(rule.required) ? " NOT NULL" : "";
-    const reference = targetColumnReference(sourceColumn, rule, dimensions);
     const unique = parseBool(rule.unique) ? " UNIQUE" : "";
-    columnDefs.push(`${quoteIdent(targetColumn)} ${dataType}${nullable}${reference}${unique}`);
+    columnDefs.push(`${quoteIdent(targetColumn)} ${dataType}${nullable}${unique}`);
   }
 
   if (columnDefs.length === 0) return;
@@ -999,6 +1203,129 @@ async function ensureTargetTable(client, target, columnsRules, dimensions) {
   `);
 }
 
+function databaseObjectName(prefix, parts) {
+  const raw = `${prefix}_${parts.join("_")}`.toLowerCase().replace(/[^a-z0-9_]+/g, "_");
+  const hash = crypto.createHash("sha256").update(raw).digest("hex").slice(0, 8);
+  return `${raw.slice(0, 54)}_${hash}`;
+}
+
+function targetForeignKeys(target, columnsRules, dimensions) {
+  const specs = [];
+  const targetTable = String(target.table);
+
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    if (!rule.target) continue;
+    const targetColumn = String(rule.target);
+
+    if (rule.dimension) {
+      const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
+      specs.push({
+        name: databaseObjectName("fk", [targetTable, targetColumn, dimension.table, dimension.keyColumn]),
+        localColumns: [targetColumn],
+        referencedSchema: dimension.schema,
+        referencedTable: dimension.table,
+        referencedColumns: [dimension.keyColumn],
+        generatedColumns: []
+      });
+    }
+
+    if (rule.references) {
+      const ref = ensureObject(rule.references, `${sourceColumn}.references`);
+      const fixed = Object.entries(ensureObject(ref.where || {}, `${sourceColumn}.references.where`));
+      const generatedColumns = fixed.map(([column, value]) => ({
+        name: databaseObjectName("ref", [targetColumn, column]),
+        value
+      }));
+      specs.push({
+        name: databaseObjectName("fk", [targetTable, targetColumn, String(ref.table), String(ref.column), ...fixed.map(([column]) => column)]),
+        localColumns: [...generatedColumns.map((column) => column.name), targetColumn],
+        referencedSchema: String(ref.schema || DEFAULT_SCHEMA),
+        referencedTable: String(ref.table),
+        referencedColumns: [...fixed.map(([column]) => String(column)), String(ref.column)],
+        generatedColumns
+      });
+    }
+  }
+
+  return specs;
+}
+
+async function constraintExists(client, schema, table, constraintName) {
+  const result = await client.query(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM pg_constraint c
+       JOIN pg_class t ON t.oid = c.conrelid
+       JOIN pg_namespace n ON n.oid = t.relnamespace
+       WHERE n.nspname = $1 AND t.relname = $2 AND c.conname = $3
+     ) AS exists;`,
+    [schema, table, constraintName]
+  );
+  return Boolean(result.rows[0]?.exists);
+}
+
+async function ensureTargetForeignKeys(client, target, columnsRules, dimensions, progress) {
+  const targetSchema = String(target.schema || DEFAULT_SCHEMA);
+  const targetTable = String(target.table);
+  const targetSql = qualifiedTable(targetSchema, targetTable);
+  const specs = targetForeignKeys(target, columnsRules, dimensions);
+
+  for (const [index, spec] of specs.entries()) {
+    for (const generated of spec.generatedColumns) {
+      await runLoggedOperation({
+        ...progress,
+        label: `Generated FK column ${generated.name}`,
+        operation: () => client.query(
+          `ALTER TABLE ${targetSql} ADD COLUMN IF NOT EXISTS ${quoteIdent(generated.name)} text ` +
+          `GENERATED ALWAYS AS (${sqlLiteral(generated.value)}::text) STORED;`
+        )
+      });
+    }
+    if (await constraintExists(client, targetSchema, targetTable, spec.name)) {
+      progress.logger.info(`FK ${index + 1}/${specs.length} already exists`, { constraint: spec.name });
+      continue;
+    }
+    await runLoggedOperation({
+      ...progress,
+      label: `Creating FK ${index + 1}/${specs.length}`,
+      details: { constraint: spec.name },
+      operation: () => client.query(
+        `ALTER TABLE ${targetSql} ADD CONSTRAINT ${quoteIdent(spec.name)} ` +
+        `FOREIGN KEY (${spec.localColumns.map(quoteIdent).join(", ")}) ` +
+        `REFERENCES ${qualifiedTable(spec.referencedSchema, spec.referencedTable)} ` +
+        `(${spec.referencedColumns.map(quoteIdent).join(", ")}) NOT VALID;`
+      )
+    });
+  }
+  return specs;
+}
+
+async function validateTargetForeignKeys(client, target, specs, progress) {
+  const targetSchema = String(target.schema || DEFAULT_SCHEMA);
+  const targetTable = String(target.table);
+  const targetSql = qualifiedTable(targetSchema, targetTable);
+  for (const [index, spec] of specs.entries()) {
+    await runLoggedOperation({
+      ...progress,
+      label: `Validating FK ${index + 1}/${specs.length}`,
+      details: { constraint: spec.name },
+      operation: () => client.query(`ALTER TABLE ${targetSql} VALIDATE CONSTRAINT ${quoteIdent(spec.name)};`)
+    });
+    const indexName = databaseObjectName("idx", [targetTable, ...spec.localColumns]);
+    await runLoggedOperation({
+      ...progress,
+      label: `Creating FK index ${index + 1}/${specs.length}`,
+      details: { index: indexName },
+      includeIndexProgress: true,
+      operation: () => client.query(
+        `CREATE INDEX IF NOT EXISTS ${quoteIdent(indexName)} ON ${targetSql} ` +
+        `(${spec.localColumns.map(quoteIdent).join(", ")});`
+      )
+    });
+  }
+}
+
 function dimensionLookupExpr(sourceColumn, rule, dimensions) {
   const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
   const valueExpr = dimensionValueExpr("validated", sourceColumn, rule, dimensions);
@@ -1007,6 +1334,12 @@ function dimensionLookupExpr(sourceColumn, rule, dimensions) {
         FROM ${qualifiedTable(dimension.schema, dimension.table)} ${quoteIdent("dim")}
         WHERE ${dimensionLookupCondition(dimension, "dim", valueExpr)}
       )`;
+}
+
+function migratedValueExpr(sourceColumn, rule, dimensions) {
+  if (rule.lookup) return lookupValueExpr("validated", sourceColumn, rule);
+  if (rule.dimension) return dimensionLookupExpr(sourceColumn, rule, dimensions);
+  return transformExpr("validated", sourceColumn, rule.transform, rule.type);
 }
 
 async function migrateValidRows(client, stagingSchema, stagingTable, target, columnsRules, dimensions) {
@@ -1018,11 +1351,7 @@ async function migrateValidRows(client, stagingSchema, stagingTable, target, col
     const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
     if (!rule.target) continue;
     targetColumns.push(String(rule.target));
-    selectExprs.push(
-      rule.dimension
-        ? dimensionLookupExpr(sourceColumn, rule, dimensions)
-        : transformExpr("validated", sourceColumn, rule.transform, rule.type)
-    );
+    selectExprs.push(migratedValueExpr(sourceColumn, rule, dimensions));
   }
 
   if (targetColumns.length === 0) return 0;
@@ -1052,6 +1381,10 @@ function validateDimensions(csvColumns, columnsRules, dimensions) {
   for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
     const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
     if (rule.dimension) getDimension(dimensions, String(rule.dimension), sourceColumn);
+    const lookup = normalizeLookup(rule.lookup, sourceColumn);
+    if (lookup && !csvColumns.includes(lookup.sourceColumn)) {
+      throw new Error(`columns.${sourceColumn}.lookup.source_column is missing from CSV headers: ${lookup.sourceColumn}`);
+    }
   }
 
   for (const [name, dimension] of Object.entries(dimensions)) {
@@ -1095,8 +1428,10 @@ async function processImport(args) {
   const dimensions = normalizeDimensions(settings.dimensions);
   validateDimensions(columns, rules, dimensions);
   validateTargetConfig(settings.target, rules);
+  const selectedColumns = projectedCsvColumns(columns, rules, dimensions, settings.loadOnly);
   logger.info("Validation rules loaded", { columnsWithRules: Object.keys(rules) });
   logger.info("Dimensions loaded", { dimensions: Object.keys(dimensions) });
+  logger.info("Projected staging columns", { columns: selectedColumns });
 
   if (settings.dryRun) {
     logger.info("Counting CSV rows for dry run");
@@ -1116,6 +1451,13 @@ async function processImport(args) {
   const client = new Client({ connectionString: settings.databaseUrl });
   await client.connect();
   logger.info("Connected to PostgreSQL");
+  const monitorClient = await createProgressMonitor(settings.databaseUrl, logger);
+  const progress = {
+    logger,
+    intervalMs: settings.progressEverySeconds * 1000,
+    monitorClient,
+    backendPid: client.processID
+  };
 
   try {
     logger.info("Beginning transaction");
@@ -1128,89 +1470,119 @@ async function processImport(args) {
     }
 
     logger.info("Ensuring staging table");
-    await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, columns);
+    await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, selectedColumns);
     if (settings.truncateBeforeLoad) {
-      logger.info("Truncating staging table");
-      await truncateStaging(client, settings.stagingSchema, settings.stagingTable);
+      await runLoggedOperation({
+        ...progress,
+        label: "Truncating staging table",
+        operation: () => truncateStaging(client, settings.stagingSchema, settings.stagingTable)
+      });
     }
 
-    logger.info("Starting COPY FROM STDIN");
-    const staged = await copyCsvToStaging(
-      client,
-      settings.stagingSchema,
-      settings.stagingTable,
-      columns,
-      settings.csvPath,
-      settings.encoding,
-      settings.delimiter,
-      logger,
-      settings.debugEveryRows,
-      settings.maxRows
-    );
-    logger.info("COPY finished", { staged });
+    const staged = await runLoggedOperation({
+      ...progress,
+      label: "COPY to staging",
+      details: { file: settings.csvPath },
+      operation: () => copyCsvToStaging(
+        client,
+        settings.stagingSchema,
+        settings.stagingTable,
+        columns,
+        selectedColumns,
+        settings.csvPath,
+        settings.encoding,
+        settings.delimiter,
+        logger,
+        settings.debugEveryRows,
+        settings.maxRows
+      )
+    });
+    logger.info("COPY result", { staged });
 
     let rejected = 0;
     let migrated = 0;
 
     if (Object.keys(rules).length > 0 && !settings.loadOnly) {
       if (Object.keys(dimensions).length > 0) {
-        logger.info("Populating dimensions from staging");
-        const dimensionsInserted = await populateDimensions(
-          client,
-          settings.stagingSchema,
-          settings.stagingTable,
-          rules,
-          dimensions,
-          logger
-        );
+        const dimensionsInserted = await runLoggedOperation({
+          ...progress,
+          label: "Populating dimensions from staging",
+          operation: () => populateDimensions(
+            client,
+            settings.stagingSchema,
+            settings.stagingTable,
+            rules,
+            dimensions,
+            logger
+          )
+        });
         logger.info("Dimensions populated", { inserted: dimensionsInserted });
       }
 
       logger.info("Ensuring import errors table");
       await ensureImportErrorsTable(client, settings.errorsSchema, settings.errorsTable);
-      logger.info("Clearing previous validation errors for this import");
-      await clearPreviousImportErrors(
-        client,
-        settings.errorsSchema,
-        settings.errorsTable,
-        importName,
-        settings.stagingSchema,
-        settings.stagingTable
-      );
-      logger.info("Inserting validation errors");
-      rejected = await insertValidationErrors(
-        client,
-        importName,
-        settings.stagingSchema,
-        settings.stagingTable,
-        settings.errorsSchema,
-        settings.errorsTable,
-        rules,
-        target,
-        dimensions
-      );
+      await runLoggedOperation({
+        ...progress,
+        label: "Clearing previous validation errors",
+        operation: () => clearPreviousImportErrors(
+          client,
+          settings.errorsSchema,
+          settings.errorsTable,
+          importName,
+          settings.stagingSchema,
+          settings.stagingTable
+        )
+      });
+      rejected = await runLoggedOperation({
+        ...progress,
+        label: "Validating rows and recording errors",
+        operation: () => insertValidationErrors(
+          client,
+          importName,
+          settings.stagingSchema,
+          settings.stagingTable,
+          settings.errorsSchema,
+          settings.errorsTable,
+          rules,
+          target,
+          dimensions
+        )
+      });
       logger.info("Validation errors inserted", { rejected });
 
       if (target) {
         logger.info("Ensuring target table", {
           target: `${target.schema || DEFAULT_SCHEMA}.${target.table}`
         });
-        await ensureTargetTable(client, target, rules, dimensions);
+        await runLoggedOperation({
+          ...progress,
+          label: "Ensuring target table structure",
+          operation: () => ensureTargetTable(client, target, rules, dimensions)
+        });
+        const foreignKeys = await ensureTargetForeignKeys(client, target, rules, dimensions, progress);
 
-        if ((target.mode || "replace") === "replace") {
-          logger.info("Truncating target table before migration", {
-            target: `${target.schema || DEFAULT_SCHEMA}.${target.table}`
-          });
-          await truncateTarget(client, target);
-        } else if (target.mode !== "append") {
-          throw new Error(`Unsupported target.mode: ${target.mode}`);
+        const targetMode = target.mode || "replace";
+        if (targetMode === "replace") {
+          if (!args.targetsPreTruncated) {
+            await runLoggedOperation({
+              ...progress,
+              label: "Truncating target table before migration",
+              details: { target: `${target.schema || DEFAULT_SCHEMA}.${target.table}` },
+              operation: () => truncateTarget(client, target)
+            });
+          }
+        } else if (targetMode !== "append") {
+          throw new Error(`Unsupported target.mode: ${targetMode}`);
         }
 
-        logger.info("Migrating valid rows to target", {
-          target: `${target.schema || DEFAULT_SCHEMA}.${target.table}`
+        migrated = await runLoggedOperation({
+          ...progress,
+          label: "Migrating valid rows to target",
+          details: { target: `${target.schema || DEFAULT_SCHEMA}.${target.table}` },
+          operation: () => migrateValidRows(client, settings.stagingSchema, settings.stagingTable, target, rules, dimensions)
         });
-        migrated = await migrateValidRows(client, settings.stagingSchema, settings.stagingTable, target, rules, dimensions);
         logger.info("Valid rows migrated", { migrated });
+        await validateTargetForeignKeys(client, target, foreignKeys, progress);
       }
     } else if (settings.loadOnly) {
       logger.info("Skipping validation and migration because loadOnly=true");
@@ -1218,11 +1590,17 @@ async function processImport(args) {
       logger.info("Skipping validation and migration because no column rules are configured");
     }
 
-    logger.info("Committing transaction");
-    await client.query("COMMIT");
+    await runLoggedOperation({
+      ...progress,
+      label: "Committing transaction",
+      operation: () => client.query("COMMIT")
+    });
     if (settings.dropStagingAfterLoad) {
-      logger.info("Dropping staging table after successful import");
-      await dropStaging(client, settings.stagingSchema, settings.stagingTable);
+      await runLoggedOperation({
+        ...progress,
+        label: "Dropping staging table after successful import",
+        operation: () => dropStaging(client, settings.stagingSchema, settings.stagingTable)
+      });
     }
     console.log(`Import complete. import=${importName} staged=${staged} rejected=${rejected} migrated=${migrated}`);
   } catch (error) {
@@ -1231,17 +1609,83 @@ async function processImport(args) {
     throw error;
   } finally {
     logger.info("Closing PostgreSQL connection");
-    await client.end();
+    try {
+      if (monitorClient) await monitorClient.end();
+    } finally {
+      await client.end();
+    }
   }
 }
 
 async function processAllImports(args) {
   const { config } = loadConfig(args.config);
   const importNames = getAllImportNames(config);
+  let targetsPreTruncated = false;
+
+  if (!args.dryRun && !args.loadOnly) {
+    const databaseUrl = coalesce(args.databaseUrl, buildDatabaseUrl(config), process.env.DATABASE_URL);
+    if (!databaseUrl) throw new Error("Missing database URL for coordinated target truncation.");
+    const debugEnabled = args.debug || importNames.some((name) => parseBool(config.imports[name]?.load?.debug));
+    const logger = createLogger(debugEnabled);
+    const progressIntervals = importNames.map((name) => Number(config.imports[name]?.load?.progress_every_seconds || 30));
+    if (progressIntervals.some((value) => !Number.isInteger(value) || value <= 0)) {
+      throw new Error("load.progress_every_seconds must be a positive integer.");
+    }
+    const intervalSeconds = Math.min(...progressIntervals);
+    logger.info("Connecting for coordinated target truncation");
+    const client = new Client({ connectionString: databaseUrl });
+    await client.connect();
+    const monitorClient = await createProgressMonitor(databaseUrl, logger);
+    const progress = {
+      logger,
+      intervalMs: intervalSeconds * 1000,
+      monitorClient,
+      backendPid: client.processID
+    };
+    try {
+      const targets = [];
+      for (const importName of importNames) {
+        const profile = ensureObject(config.imports[importName], `imports.${importName}`);
+        const target = profile.target ? ensureObject(profile.target, `imports.${importName}.target`) : undefined;
+        const load = ensureObject(profile.load || {}, `imports.${importName}.load`);
+        if (!target || parseBool(load.dry_run) || parseBool(load.load_only) ||
+            (target.mode || "replace") !== "replace" || parseBool(target.skip_if_exists)) continue;
+        if (await targetTableExists(client, target)) {
+          targets.push(qualifiedTable(String(target.schema || DEFAULT_SCHEMA), String(target.table)));
+        }
+      }
+      if (targets.length > 0) {
+        logger.info("Targets selected for coordinated truncation", { count: targets.length, targets });
+        await client.query("BEGIN");
+        await runLoggedOperation({
+          ...progress,
+          label: "Coordinated target truncation",
+          operation: () => client.query(`TRUNCATE TABLE ${targets.join(", ")};`)
+        });
+        await runLoggedOperation({
+          ...progress,
+          label: "Committing coordinated truncation",
+          operation: () => client.query("COMMIT")
+        });
+      } else {
+        logger.info("No existing targets require coordinated truncation");
+      }
+      targetsPreTruncated = true;
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch { /* connection may already be closed */ }
+      throw error;
+    } finally {
+      try {
+        if (monitorClient) await monitorClient.end();
+      } finally {
+        await client.end();
+      }
+    }
+  }
 
   for (const importName of importNames) {
     console.log(`\n== Import ${importName} ==`);
-    await processImport({ ...args, all: false, importName });
+    await processImport({ ...args, all: false, importName, targetsPreTruncated });
   }
 }
 
@@ -1254,7 +1698,19 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`ERROR: ${error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`ERROR: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  buildValidatedCte,
+  databaseObjectName,
+  normalizeDimensions,
+  projectedCsvColumns,
+  runLoggedOperation,
+  targetForeignKeys,
+  validateDimensions
+};

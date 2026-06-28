@@ -24,6 +24,7 @@ dimensions:
     schema: public
     table: municipios
     key_column: codigo_ibge
+    key_type: integer
     value_column: nombre
     transform: ascii_lower_trim
     lookup_transform: ascii_lower_trim

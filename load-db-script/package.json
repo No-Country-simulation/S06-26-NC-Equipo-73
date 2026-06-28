@@ -9,7 +9,8 @@
   "scripts": {
     "start": "npm run start:prod",
     "start:prod": "node src/index.js --all",
-    "start:test": "node src/index.js --all --mode test"
+    "start:test": "node src/index.js --all --mode test",
+    "test": "node --test"
   },
   "dependencies": {
     "csv-parse": "^5.5.6",

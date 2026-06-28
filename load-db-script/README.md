@@ -48,6 +48,11 @@ Cada perfil define:
 - `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
 - `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
 
+El staging solo contiene las columnas declaradas en `columns`, las columnas auxiliares usadas por
+`lookup` o `dimensions.source_column`, y la columna tecnica `source`. El encabezado completo sigue
+validandose, pero los campos no configurados no se materializan ni se envian a PostgreSQL. En
+`load_only` se conservan todas las columnas porque ese modo carga el CSV completo deliberadamente.
+
 Por defecto, los imports se ejecutan aunque la tabla destino ya exista. En `target` se puede usar
 `skip_if_exists: true` para omitir explicitamente un import cuando la tabla destino ya existe:
 
@@ -60,6 +65,27 @@ target:
 ```
 
 Esta verificacion mira solo si la tabla existe. Una tabla vacia tambien sera omitida si `skip_if_exists` esta activo.
+
+Las reglas `references` descartan las filas cuya referencia no existe y crean claves foraneas en
+la tabla destino. Cuando `references.where` contiene un discriminador fijo, el importador crea una
+columna generada y una FK compuesta. Esto permite, por ejemplo, referenciar
+`codigos_hospitalares(variable, codigo)` desde los campos de RD.
+
+Una columna puede obtener su valor destino mediante `lookup` cuando el valor debe derivarse de otra
+columna del CSV. Las dimensiones sin `create_missing` solo aceptan valores que resuelvan exactamente
+una fila: una dimension inexistente o ambigua se registra como error y se descarta.
+
+```yaml
+categoria:
+  target: categoria_codigo
+  lookup:
+    schema: public
+    table: categorias
+    source_column: categoria_nombre
+    match_column: nombre
+    value_column: codigo
+    transform: upper_trim
+```
 
 En `staging`, `drop_after_load: true` elimina la tabla staging al terminar una importacion exitosa:
 
@@ -98,6 +124,11 @@ Ejecutar todos los perfiles en el orden definido por `import_order`:
 ```powershell
 node src\index.js --all
 ```
+
+En cargas `--all`, las tablas con `mode: replace` existentes se truncan juntas antes de comenzar.
+Esto permite recargar tablas padre e hijas con claves foraneas sin usar `CASCADE`. La recarga aislada
+de una tabla padre puede ser rechazada por PostgreSQL si conserva tablas hijas con datos; en ese caso
+debe ejecutarse la carga compuesta.
 
 Validar sin insertar datos:
 
@@ -145,14 +176,27 @@ load:
   max_rows: 1000
   debug: true
   debug_every_rows: 100000
+  progress_every_seconds: 30
 ```
 
 Si `max_rows` no esta definido, se procesan todas las filas del CSV.
+
+Con `debug: true`, cada operacion larga informa inicio, heartbeat, duracion y finalizacion. El
+heartbeat consulta `pg_stat_activity` para mostrar esperas y PIDs bloqueadores. Durante
+`CREATE INDEX`, tambien usa `pg_stat_progress_create_index` para mostrar fase y porcentaje. COPY
+informa filas, porcentaje por bytes, filas por segundo y tiempo estimado. La frecuencia del
+heartbeat se controla con `progress_every_seconds` y por defecto es 30 segundos.
 
 Tambien existe un comando de test. En modo test, cualquier import sin `load.max_rows` queda limitado a 10000 filas:
 
 ```powershell
 npm run start:test
+```
+
+Las pruebas unitarias del importador se ejecutan con:
+
+```powershell
+npm test
 ```
 
 Equivale a:

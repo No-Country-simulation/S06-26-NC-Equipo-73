@@ -55,6 +55,10 @@ columns:
     transform: trim
   CNAE 2.0 Subclas:
     target: codigo_subclase_cnae_2
+    references:
+      schema: public
+      table: subclases_cnae
+      column: codigo_subclase
     transform: trim
   Faixa Empr Início Jan:
     target: tramo_empleo_inicio_enero
