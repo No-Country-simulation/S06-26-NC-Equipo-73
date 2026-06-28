@@ -12,7 +12,6 @@ target:
   table: municipios
   mode: replace
   primary_key: codigo_ibge
-  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

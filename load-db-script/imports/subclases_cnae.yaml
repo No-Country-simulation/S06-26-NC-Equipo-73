@@ -12,7 +12,6 @@ target:
   table: subclases_cnae
   mode: replace
   primary_key: codigo_subclase
-  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

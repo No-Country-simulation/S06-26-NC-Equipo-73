@@ -11,7 +11,6 @@ target:
   schema: public
   table: cagedest_012019
   mode: replace
-  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

@@ -12,7 +12,6 @@ target:
   table: ocupaciones_cbo
   mode: replace
   primary_key: codigo_ocupacion
-  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

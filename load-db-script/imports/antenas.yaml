@@ -12,7 +12,6 @@ target:
   table: antenas_flp
   mode: replace
   primary_key: ecgi
-  skip_if_exists: true
 errors:
   schema: public
   table: import_errors

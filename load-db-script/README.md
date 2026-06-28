@@ -48,7 +48,8 @@ Cada perfil define:
 - `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
 - `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
 
-En `target` se puede usar `skip_if_exists: true` para no cargar un import cuando la tabla destino ya existe:
+Por defecto, los imports se ejecutan aunque la tabla destino ya exista. En `target` se puede usar
+`skip_if_exists: true` para omitir explicitamente un import cuando la tabla destino ya existe:
 
 ```yaml
 target:
