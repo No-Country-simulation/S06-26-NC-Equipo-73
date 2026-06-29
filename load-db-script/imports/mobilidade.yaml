@@ -19,6 +19,8 @@ load:
   load_only: false
   debug: true
   debug_every_rows: 100000
+  chunk_rows: 100000
+  chunk_retries: 3
 dimensions:
   municipios:
     schema: public

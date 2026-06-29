@@ -52,7 +52,7 @@ test("VISENT municipality dimension rejects missing or ambiguous names", () => {
 });
 
 test("foreign keys are generated for direct references and dimensions", () => {
-  const expected = { clusters: 1, antenas: 2, tensor_concentracao: 3, mobilidade: 3, cagedest_012019: 3 };
+  const expected = { clusters: 1, antenas: 2, tensor_concentracao: 3, mobilidade: 3, cagedest_012019: 4 };
   for (const [name, count] of Object.entries(expected)) {
     const current = profile(name);
     const specs = targetForeignKeys(current.target, current.columns, normalizeDimensions(current.dimensions));

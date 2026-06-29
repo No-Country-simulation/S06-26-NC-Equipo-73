@@ -1,9 +1,9 @@
 database:
-  host: localhost
-  port: 5432
-  database: loaddb
+  host: 64.176.6.104
+  port: 5433
+  database: app-bit
   user: postgres
-  password: password
+  password: O2v11KoQqjNppZt8soq5
 default_import: municipios
 imports_dir: imports
 import_order:

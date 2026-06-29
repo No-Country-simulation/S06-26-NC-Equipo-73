@@ -301,6 +301,15 @@ function parseOptionalPositiveInteger(value, name) {
   return parsed;
 }
 
+function parseOptionalNonNegativeInteger(value, name) {
+  if (value === null || value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${name} must be a non-negative integer when configured.`);
+  }
+  return parsed;
+}
+
 function resolveMaxRows(loadCfg, mode) {
   const configuredMaxRows = parseOptionalPositiveInteger(loadCfg.max_rows, "load.max_rows");
   if (configuredMaxRows !== undefined) return configuredMaxRows;
@@ -407,6 +416,8 @@ function resolveSettings(args, config, configDir, profile) {
     debug: args.debug || parseBool(loadCfg.debug),
     debugEveryRows: Number(coalesce(loadCfg.debug_every_rows, 100000)),
     progressEverySeconds: Number(coalesce(loadCfg.progress_every_seconds, 30)),
+    chunkRows: parseOptionalPositiveInteger(loadCfg.chunk_rows, "load.chunk_rows"),
+    chunkRetries: parseOptionalNonNegativeInteger(loadCfg.chunk_retries, "load.chunk_retries") ?? 3,
     maxRows: resolveMaxRows(loadCfg, args.mode),
     target: profile.target,
     columns: profile.columns,
@@ -808,6 +819,188 @@ async function migrateNormalizedRows(client, stagingSchema, stagingTable, target
     WHERE ${quoteIdent(VALIDATION_ERRORS_COLUMN)} IS NULL;
   `);
   return result.rowCount;
+}
+
+function isRetryableConnectionError(error) {
+  const code = String(error?.code || "");
+  const message = String(error?.message || "").toLowerCase();
+  return code.startsWith("08") || code === "57P01" ||
+    ["ECONNRESET", "EPIPE", "ETIMEDOUT", "ECONNREFUSED"].includes(code) ||
+    message.includes("connection terminated") || message.includes("connection closed") ||
+    message.includes("socket") || message.includes("transaction timeout");
+}
+
+function chunkTableName(prefix, targetTable) {
+  return databaseObjectName(prefix, [targetTable]);
+}
+
+async function shadowSwapDependencies(client, schema, table) {
+  const relation = `${schema}.${table}`;
+  const foreignKeys = await client.query(
+    `SELECT ns.nspname AS schema_name, src.relname AS table_name, con.conname AS dependency_name
+     FROM pg_constraint con
+     JOIN pg_class src ON src.oid = con.conrelid
+     JOIN pg_namespace ns ON ns.oid = src.relnamespace
+     WHERE con.contype = 'f' AND con.confrelid = to_regclass($1);`,
+    [relation]
+  );
+  const views = await client.query(
+    `SELECT DISTINCT ns.nspname AS schema_name, view_rel.relname AS table_name
+     FROM pg_depend dep
+     JOIN pg_rewrite rewrite ON rewrite.oid = dep.objid
+     JOIN pg_class view_rel ON view_rel.oid = rewrite.ev_class
+     JOIN pg_namespace ns ON ns.oid = view_rel.relnamespace
+     WHERE dep.refobjid = to_regclass($1) AND view_rel.relkind IN ('v', 'm');`,
+    [relation]
+  );
+  return [...foreignKeys.rows, ...views.rows];
+}
+
+async function assertShadowSwapSafe(client, target) {
+  const schema = String(target.schema || DEFAULT_SCHEMA);
+  const table = String(target.table);
+  if (!await targetTableExists(client, target)) return;
+  const dependencies = await shadowSwapDependencies(client, schema, table);
+  if (dependencies.length > 0) {
+    const names = dependencies.map((row) => `${row.schema_name}.${row.table_name}`).join(", ");
+    throw new Error(
+      `Chunked shadow loading is unsafe for ${schema}.${table} because it has incoming dependencies: ${names}`
+    );
+  }
+}
+
+async function copyTableGrants(client, sourceTarget, destinationTarget) {
+  if (!await targetTableExists(client, sourceTarget)) return;
+  const sourceSchema = String(sourceTarget.schema || DEFAULT_SCHEMA);
+  const sourceTable = String(sourceTarget.table);
+  const destinationSchema = String(destinationTarget.schema || DEFAULT_SCHEMA);
+  const destinationTable = String(destinationTarget.table);
+  const grants = await client.query(
+    `SELECT grantee, privilege_type
+     FROM information_schema.role_table_grants
+     WHERE table_schema = $1 AND table_name = $2 AND grantee <> current_user
+     ORDER BY grantee, privilege_type;`,
+    [sourceSchema, sourceTable]
+  );
+  for (const grant of grants.rows) {
+    const grantee = grant.grantee === "PUBLIC" ? "PUBLIC" : quoteIdent(grant.grantee);
+    await client.query(
+      `GRANT ${grant.privilege_type} ON ${qualifiedTable(destinationSchema, destinationTable)} TO ${grantee};`
+    );
+  }
+}
+
+async function targetOwner(client, target) {
+  if (!await targetTableExists(client, target)) return undefined;
+  const result = await client.query(
+    `SELECT pg_get_userbyid(cls.relowner) AS owner
+     FROM pg_class cls
+     JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+     WHERE ns.nspname = $1 AND cls.relname = $2;`,
+    [String(target.schema || DEFAULT_SCHEMA), String(target.table)]
+  );
+  return result.rows[0]?.owner;
+}
+
+function normalizedRecordLine(record, targetColumns, columnsRules, dimensions, runtime, sourceName) {
+  const normalized = normalizeAndValidateRecord(record, columnsRules, dimensions, runtime);
+  const values = targetColumns.map((column) => escapeCopyCsvValue(normalized.values[column]));
+  values.push(escapeCopyCsvValue(sourceName));
+  values.push(escapeCopyCsvValue(normalized.errors.length ? JSON.stringify(record) : null));
+  values.push(escapeCopyCsvValue(normalized.errors.length ? normalized.errors.join("; ") : null));
+  return { line: values.join(",") + "\n", rejected: normalized.errors.length > 0 };
+}
+
+async function copyNormalizedLines(client, schema, table, targetColumns, lines) {
+  const copyColumns = [...targetColumns, SOURCE_COLUMN, ROW_DATA_COLUMN, VALIDATION_ERRORS_COLUMN];
+  const copySql = `COPY ${qualifiedTable(schema, table)} (${copyColumns.map(quoteIdent).join(", ")}) ` +
+    "FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
+  await pipeline(Readable.from(lines), client.query(copyFrom(copySql)));
+}
+
+async function executeChunkTransaction({
+  databaseUrl,
+  logger,
+  progressEverySeconds,
+  chunkNumber,
+  maxRetries,
+  stagingSchema,
+  stagingTable,
+  target,
+  columnsRules,
+  dimensions,
+  errorsSchema,
+  errorsTable,
+  importName,
+  targetColumns,
+  lines
+}) {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const client = new Client({ connectionString: databaseUrl });
+    try {
+      await client.connect();
+      const result = await runLoggedOperation({
+        logger,
+        intervalMs: progressEverySeconds * 1000,
+        backendPid: client.processID,
+        label: `Chunk ${chunkNumber} transaction`,
+        details: { rows: lines.length, attempt: attempt + 1 },
+        operation: async () => {
+          await client.query("BEGIN");
+          await truncateStaging(client, stagingSchema, stagingTable);
+          await copyNormalizedLines(client, stagingSchema, stagingTable, targetColumns, lines);
+          const rejected = await insertStreamingErrors(
+            client, importName, stagingSchema, stagingTable, errorsSchema, errorsTable
+          );
+          const migrated = await migrateNormalizedRows(
+            client, stagingSchema, stagingTable, target, columnsRules, dimensions
+          );
+          await client.query("COMMIT");
+          return { rejected, migrated };
+        }
+      });
+      await client.end();
+      return result;
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch { /* disconnected transactions are already rolled back */ }
+      try { await client.end(); } catch { /* connection may already be closed */ }
+      if (attempt >= maxRetries || !isRetryableConnectionError(error)) throw error;
+      logger.info(`Chunk ${chunkNumber} will be retried with a new connection`, {
+        attempt: attempt + 1,
+        maxAttempts: maxRetries + 1,
+        error: error.message
+      });
+    }
+  }
+  throw new Error(`Chunk ${chunkNumber} exhausted its retry attempts.`);
+}
+
+async function swapShadowTarget(client, target, shadowTarget) {
+  const schema = String(target.schema || DEFAULT_SCHEMA);
+  const targetTable = String(target.table);
+  const shadowTable = String(shadowTarget.table);
+  const backupTable = chunkTableName("respaldo", targetTable);
+  const backupTarget = { schema, table: backupTable };
+  if (await targetTableExists(client, backupTarget)) {
+    throw new Error(`Cannot swap target because backup table already exists: ${schema}.${backupTable}`);
+  }
+  const targetExists = await targetTableExists(client, target);
+  const owner = await targetOwner(client, target);
+  await client.query("BEGIN");
+  try {
+    if (targetExists) {
+      await client.query(`ALTER TABLE ${qualifiedTable(schema, targetTable)} RENAME TO ${quoteIdent(backupTable)};`);
+    }
+    await client.query(`ALTER TABLE ${qualifiedTable(schema, shadowTable)} RENAME TO ${quoteIdent(targetTable)};`);
+    if (targetExists) await client.query(`DROP TABLE ${qualifiedTable(schema, backupTable)};`);
+    if (owner) {
+      await client.query(`ALTER TABLE ${qualifiedTable(schema, targetTable)} OWNER TO ${quoteIdent(owner)};`);
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
 }
 
 async function truncateStaging(client, schema, table) {
@@ -1812,6 +2005,185 @@ function validateDimensions(csvColumns, columnsRules, dimensions) {
   }
 }
 
+async function processChunkedImport({
+  importName,
+  settings,
+  target,
+  columns,
+  selectedColumns,
+  rules,
+  dimensions,
+  logger
+}) {
+  if (!target) throw new Error("load.chunk_rows requires a target section.");
+  if ((target.mode || "replace") !== "replace") {
+    throw new Error("load.chunk_rows currently requires target.mode=replace.");
+  }
+  if (settings.loadOnly) throw new Error("load.chunk_rows is not supported with load_only=true.");
+  if (Object.keys(rules).length === 0) throw new Error("load.chunk_rows requires configured columns.");
+
+  const targetSchema = String(target.schema || DEFAULT_SCHEMA);
+  const shadowTarget = {
+    ...target,
+    schema: targetSchema,
+    table: chunkTableName("carga", String(target.table)),
+    skip_if_exists: false
+  };
+  const targetColumns = orderedTargetColumns(rules);
+  let runtime;
+  const setupClient = new Client({ connectionString: settings.databaseUrl });
+  await setupClient.connect();
+  try {
+    if (parseBool(target.skip_if_exists) && await targetTableExists(setupClient, target)) {
+      console.log(`Import skipped. import=${importName} target=${targetSchema}.${target.table} already exists`);
+      return;
+    }
+    await assertShadowSwapSafe(setupClient, target);
+    logger.info("Preparing chunked shadow load", {
+      target: `${targetSchema}.${target.table}`,
+      shadow: `${targetSchema}.${shadowTarget.table}`,
+      chunkRows: settings.chunkRows,
+      chunkRetries: settings.chunkRetries
+    });
+    await setupClient.query("BEGIN");
+    await ensureImportErrorsTable(setupClient, settings.errorsSchema, settings.errorsTable);
+    await clearPreviousImportErrors(
+      setupClient,
+      settings.errorsSchema,
+      settings.errorsTable,
+      importName,
+      settings.stagingSchema,
+      settings.stagingTable
+    );
+    await setupClient.query(`DROP TABLE IF EXISTS ${qualifiedTable(targetSchema, shadowTarget.table)};`);
+    await ensureTargetTable(setupClient, shadowTarget, rules, dimensions);
+    await recreateNormalizedStagingTable(
+      setupClient,
+      settings.stagingSchema,
+      settings.stagingTable,
+      targetColumns
+    );
+    await setupClient.query("COMMIT");
+    runtime = await buildStreamingRuntime(setupClient, rules, dimensions, logger);
+  } catch (error) {
+    try { await setupClient.query("ROLLBACK"); } catch { /* setup may have already committed */ }
+    throw error;
+  } finally {
+    await setupClient.end();
+  }
+
+  const sourceName = sourceNameFromCsvPath(settings.csvPath);
+  const selected = new Set(selectedColumns);
+  const fileSize = fs.statSync(settings.csvPath).size;
+  let bytesRead = 0;
+  let staged = 0;
+  let rejected = 0;
+  let migrated = 0;
+  let chunkNumber = 0;
+  let lines = [];
+  const startedAt = Date.now();
+  const byteCounter = new Transform({
+    decodeStrings: false,
+    transform(chunk, _encoding, callback) {
+      bytesRead += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk, settings.encoding);
+      callback(null, chunk);
+    }
+  });
+  const parser = parse({
+    bom: true,
+    columns: columns.map((column) => selected.has(column) ? column : false),
+    from_line: 2,
+    delimiter: settings.delimiter,
+    skip_empty_lines: false,
+    relax_column_count: false
+  });
+  const parsedRows = createCsvInputStream(settings.csvPath, settings.encoding, settings.maxRows)
+    .pipe(byteCounter)
+    .pipe(parser);
+
+  const flushChunk = async () => {
+    if (lines.length === 0) return;
+    chunkNumber += 1;
+    const chunkLines = lines;
+    lines = [];
+    const result = await executeChunkTransaction({
+      databaseUrl: settings.databaseUrl,
+      logger,
+      progressEverySeconds: settings.progressEverySeconds,
+      chunkNumber,
+      maxRetries: settings.chunkRetries,
+      stagingSchema: settings.stagingSchema,
+      stagingTable: settings.stagingTable,
+      target: shadowTarget,
+      columnsRules: rules,
+      dimensions,
+      errorsSchema: settings.errorsSchema,
+      errorsTable: settings.errorsTable,
+      importName,
+      targetColumns,
+      lines: chunkLines
+    });
+    rejected += result.rejected;
+    migrated += result.migrated;
+    const seconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
+    const progress = {
+      chunk: chunkNumber,
+      rowsProcessed: staged,
+      rowsMigrated: migrated,
+      rowsRejected: rejected,
+      rowsPerSecond: Math.round(staged / seconds),
+      elapsedSeconds: Math.round(seconds)
+    };
+    if (!settings.maxRows && fileSize > 0) {
+      const percent = Math.min((bytesRead / fileSize) * 100, 100);
+      progress.percent = Number(percent.toFixed(1));
+      progress.etaSeconds = percent > 0 ? Math.max(0, Math.round(seconds * (100 - percent) / percent)) : undefined;
+    }
+    logger.info("Chunk committed", progress);
+  };
+
+  for await (const record of parsedRows) {
+    const normalized = normalizedRecordLine(record, targetColumns, rules, dimensions, runtime, sourceName);
+    lines.push(normalized.line);
+    staged += 1;
+    if (lines.length >= settings.chunkRows) await flushChunk();
+  }
+  await flushChunk();
+
+  logger.info("Finalizing chunked shadow table", { chunks: chunkNumber, staged, rejected, migrated });
+  const finalClient = new Client({ connectionString: settings.databaseUrl });
+  await finalClient.connect();
+  const monitorClient = await createProgressMonitor(settings.databaseUrl, logger);
+  const progress = {
+    logger,
+    intervalMs: settings.progressEverySeconds * 1000,
+    monitorClient,
+    backendPid: finalClient.processID
+  };
+  try {
+    const foreignKeys = await ensureTargetForeignKeys(finalClient, shadowTarget, rules, dimensions, progress);
+    await validateTargetForeignKeys(finalClient, shadowTarget, foreignKeys, progress);
+    await copyTableGrants(finalClient, target, shadowTarget);
+    await runLoggedOperation({
+      ...progress,
+      label: "Swapping completed shadow table into production",
+      operation: () => swapShadowTarget(finalClient, target, shadowTarget)
+    });
+    if (settings.dropStagingAfterLoad) {
+      await dropStaging(finalClient, settings.stagingSchema, settings.stagingTable);
+    }
+  } finally {
+    try {
+      if (monitorClient) await monitorClient.end();
+    } finally {
+      await finalClient.end();
+    }
+  }
+  console.log(
+    `Import complete. import=${importName} staged=${staged} rejected=${rejected} migrated=${migrated} chunks=${chunkNumber}`
+  );
+}
+
 async function processImport(args) {
   const earlyLogger = createLogger(args.debug);
   earlyLogger.info("Loading config", { config: path.resolve(args.config) });
@@ -1832,6 +2204,8 @@ async function processImport(args) {
     loadOnly: settings.loadOnly,
     dryRun: settings.dryRun,
     maxRows: settings.maxRows || "all",
+    chunkRows: settings.chunkRows || undefined,
+    chunkRetries: settings.chunkRows ? settings.chunkRetries : undefined,
     hasTarget: Boolean(settings.target),
     dimensions: settings.dimensions ? Object.keys(settings.dimensions) : [],
     errorsTable: `${settings.errorsSchema}.${settings.errorsTable}`,
@@ -1865,6 +2239,19 @@ async function processImport(args) {
   }
 
   const target = settings.target ? ensureObject(settings.target, "target") : undefined;
+  if (settings.chunkRows !== undefined) {
+    await processChunkedImport({
+      importName,
+      settings,
+      target,
+      columns,
+      selectedColumns,
+      rules,
+      dimensions,
+      logger
+    });
+    return;
+  }
   logger.info("Connecting to PostgreSQL");
   const client = new Client({ connectionString: settings.databaseUrl });
   await client.connect();

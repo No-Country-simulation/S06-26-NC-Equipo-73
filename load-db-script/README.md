@@ -197,6 +197,23 @@ heartbeat consulta `pg_stat_activity` para mostrar esperas y PIDs bloqueadores. 
 informa filas, porcentaje por bytes, filas por segundo y tiempo estimado. La frecuencia del
 heartbeat se controla con `progress_every_seconds` y por defecto es 30 segundos.
 
+Para archivos que no caben de forma segura en una sola transaccion, `load.chunk_rows` activa una
+carga generica mediante tabla sombra. Cada chunk se confirma por separado y se reintenta con una
+conexion nueva cuando ocurre un error recuperable de red o conexion:
+
+```yaml
+load:
+  chunk_rows: 100000
+  chunk_retries: 3
+```
+
+Al ejecutar un import individual, la tabla destino se conserva hasta que todos los chunks, indices
+y FK terminan correctamente. El intercambio final se hace en una transaccion corta. Esta estrategia
+requiere `target.mode: replace` y se rechaza si la tabla destino tiene FK entrantes o vistas
+dependientes. Si la carga individual falla, la tabla productiva permanece intacta y la tabla sombra
+queda disponible para diagnostico. Con `--all`, la truncacion coordinada conserva el comportamiento
+existente y vacia previamente los destinos para poder recargar tablas relacionadas sin bloqueos FK.
+
 Tambien existe un comando de test. En modo test, cualquier import sin `load.max_rows` queda limitado a 10000 filas:
 
 ```powershell
