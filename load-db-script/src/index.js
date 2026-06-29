@@ -987,6 +987,12 @@ function transformSqlExpr(expression, transform, valueType) {
   if (transform === "bigint") return `${nullIfEmpty}::bigint`;
   if (transform === "date_ymd") return `to_date(${nullIfEmpty}, 'YYYY-MM-DD')`;
   if (transform === "date_yyyymmdd") return `to_date(${nullIfEmpty}, 'YYYYMMDD')`;
+  if (transform === "ibge_without_check_digit") {
+    const codeWithoutDigit = `left(${nullIfEmpty}, 6)`;
+    if (valueType === "integer") return `${codeWithoutDigit}::integer`;
+    if (valueType === "bigint") return `${codeWithoutDigit}::bigint`;
+    return codeWithoutDigit;
+  }
 
   if (valueType === "numeric") return `replace(${nullIfEmpty}, ',', '.')::numeric`;
   if (valueType === "integer") return `${nullIfEmpty}::integer`;
@@ -1027,6 +1033,11 @@ function normalizePrimitiveValue(rawValue, transform, valueType) {
   }
   const trimmed = String(rawValue).trim();
   const effectiveTransform = transform || valueType;
+
+  if (effectiveTransform === "ibge_without_check_digit") {
+    if (!/^\d{7}$/.test(trimmed)) return { value: null, valid: false };
+    return { value: trimmed.slice(0, 6), valid: true };
+  }
 
   if (effectiveTransform === "numeric_comma" || valueType === "numeric") {
     if (!(new RegExp(NUMERIC_REGEX)).test(trimmed)) return { value: null, valid: false };
@@ -1108,7 +1119,11 @@ async function buildStreamingRuntime(client, columnsRules, dimensions, logger) {
       const map = new Map();
       for (const row of rows) {
         const actualValue = catalogValue(row[String(ref.column)]);
-        const comparable = normalizePrimitiveValue(actualValue, rule.transform, rule.type);
+        const comparable = normalizePrimitiveValue(
+          actualValue,
+          ref.lookup_transform || rule.transform,
+          rule.type
+        );
         if (comparable.valid) addCatalogMatch(map, catalogValue(comparable.value), actualValue);
       }
       runtime.references.set(sourceColumn, map);
@@ -1338,9 +1353,13 @@ function validationErrorCases(sourceColumn, rule, stagingSchema, stagingTable, t
     const ref = ensureObject(rule.references, `${sourceColumn}.references`);
     const refSql = qualifiedTable(String(ref.schema || DEFAULT_SCHEMA), String(ref.table));
     const transformed = transformExpr(alias, sourceColumn, rule.transform, rule.type);
+    const referencedValue = col("r", String(ref.column));
+    const comparableReferencedValue = ref.lookup_transform
+      ? transformSqlExpr(referencedValue, ref.lookup_transform, rule.type)
+      : referencedValue;
     const fixedConditions = Object.entries(ensureObject(ref.where || {}, `${sourceColumn}.references.where`))
       .map(([column, value]) => `${col("r", column)} = ${sqlLiteral(value)}`);
-    const conditions = [`${col("r", String(ref.column))} = ${transformed}`, ...fixedConditions];
+    const conditions = [`${comparableReferencedValue} = ${transformed}`, ...fixedConditions];
     errors.push(
       `CASE WHEN ${nonEmptyCondition(alias, sourceColumn)} AND NOT EXISTS (` +
         `SELECT 1 FROM ${refSql} ${quoteIdent("r")} ` +
@@ -1718,6 +1737,23 @@ function dimensionLookupExpr(sourceColumn, rule, dimensions) {
 function migratedValueExpr(sourceColumn, rule, dimensions) {
   if (rule.lookup) return lookupValueExpr("validated", sourceColumn, rule);
   if (rule.dimension) return dimensionLookupExpr(sourceColumn, rule, dimensions);
+  if (rule.references && rule.references.lookup_transform) {
+    const ref = ensureObject(rule.references, `${sourceColumn}.references`);
+    const sourceValue = transformExpr("validated", sourceColumn, rule.transform, rule.type);
+    const referencedValue = col("referencia", String(ref.column));
+    const comparableReferencedValue = transformSqlExpr(
+      referencedValue,
+      ref.lookup_transform,
+      rule.type
+    );
+    const fixedConditions = Object.entries(ensureObject(ref.where || {}, `${sourceColumn}.references.where`))
+      .map(([column, value]) => `${col("referencia", column)} = ${sqlLiteral(value)}`);
+    return `(
+        SELECT ${referencedValue}
+        FROM ${qualifiedTable(String(ref.schema || DEFAULT_SCHEMA), String(ref.table))} ${quoteIdent("referencia")}
+        WHERE ${[`${comparableReferencedValue} = ${sourceValue}`, ...fixedConditions].join(" AND ")}
+      )`;
+  }
   return transformExpr("validated", sourceColumn, rule.transform, rule.type);
 }
 

@@ -21,7 +21,7 @@ load:
   debug_every_rows: 100000
 columns:
   UF_ZI:
-    target: codigo_municipio_gestor
+    target: codigo_gestor_territorial
     required: true
     type: integer
   ANO_CMPT:
@@ -68,6 +68,11 @@ columns:
     target: codigo_municipio_residencia
     required: true
     type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_municipio_ibge
+      lookup_transform: ibge_without_check_digit
   NASC:
     target: fecha_nacimiento
     type: date
@@ -153,6 +158,11 @@ columns:
     target: codigo_municipio_movimiento
     required: true
     type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_municipio_ibge
+      lookup_transform: ibge_without_check_digit
   COD_IDADE:
     target: codigo_unidad_edad
     type: integer

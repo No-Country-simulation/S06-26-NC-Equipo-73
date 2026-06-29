@@ -89,11 +89,19 @@ test("database tables use the agreed Spanish names", () => {
 test("hospital references use composite foreign keys", () => {
   const rd = profile("rd_202402");
   const specs = targetForeignKeys(rd.target, rd.columns, {});
-  assert.equal(specs.length, 11);
-  for (const spec of specs) {
+  assert.equal(specs.length, 13);
+  const catalogSpecs = specs.filter((spec) => spec.referencedTable === "codigos_hospitalarios");
+  const municipalitySpecs = specs.filter((spec) => spec.referencedTable === "municipios");
+  assert.equal(catalogSpecs.length, 11);
+  assert.equal(municipalitySpecs.length, 2);
+  for (const spec of catalogSpecs) {
     assert.equal(spec.generatedColumns.length, 1);
     assert.equal(spec.localColumns.length, 2);
     assert.deepEqual(spec.referencedColumns, ["variable", "codigo"]);
+  }
+  for (const spec of municipalitySpecs) {
+    assert.equal(spec.generatedColumns.length, 0);
+    assert.deepEqual(spec.referencedColumns, ["codigo_municipio_ibge"]);
   }
 });
 
@@ -195,4 +203,6 @@ test("streaming primitive normalization validates real dates and decimal commas"
   assert.equal(normalizePrimitiveValue("20230229", "date_yyyymmdd", "date").valid, false);
   assert.deepEqual(normalizePrimitiveValue("123,45", "numeric_comma", "numeric"), { value: "123.45", valid: true });
   assert.deepEqual(normalizePrimitiveValue("0013", undefined, "integer"), { value: "13", valid: true });
+  assert.deepEqual(normalizePrimitiveValue("1200203", "ibge_without_check_digit", "integer"), { value: "120020", valid: true });
+  assert.equal(normalizePrimitiveValue("120020", "ibge_without_check_digit", "integer").valid, false);
 });

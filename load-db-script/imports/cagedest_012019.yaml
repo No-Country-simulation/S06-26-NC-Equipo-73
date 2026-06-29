@@ -32,6 +32,11 @@ columns:
     target: codigo_municipio
     required: true
     type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_municipio_ibge
+      lookup_transform: ibge_without_check_digit
   Ano Declarado:
     target: anio_declarado
     required: true
