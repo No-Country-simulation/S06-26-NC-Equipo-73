@@ -4,17 +4,17 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_clusters
+  table: temporal_zonas
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
-  table: clusters
+  table: zonas
   mode: replace
-  primary_key: cluster
+  primary_key: nombre_zona
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -22,17 +22,17 @@ load:
   debug_every_rows: 100000
 columns:
   Cluster:
-    target: cluster
+    target: nombre_zona
     required: true
     transform: upper_trim
   MunicipioCodigo:
-    target: municipio_codigo
+    target: codigo_municipio
     required: true
     type: integer
     references:
       schema: public
       table: municipios
-      column: codigo_ibge
+      column: codigo_municipio_ibge
   Lat:
     target: latitud
     required: true
@@ -42,6 +42,6 @@ columns:
     required: true
     type: numeric
   Perfil:
-    target: perfil
+    target: descripcion_perfil
     required: true
     transform: trim

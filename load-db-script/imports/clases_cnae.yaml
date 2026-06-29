@@ -4,7 +4,7 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_clases_cnae
+  table: temporal_clases_cnae
   truncate_before_load: true
   drop_after_load: true
 target:
@@ -14,7 +14,7 @@ target:
   primary_key: codigo_clase
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false

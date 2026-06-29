@@ -15,8 +15,10 @@ const YAML = require("yaml");
 
 const DEFAULT_CONFIG_FILE = "config.yaml";
 const DEFAULT_SCHEMA = "public";
-const DEFAULT_ERRORS_TABLE = "import_errors";
-const SOURCE_COLUMN = "source";
+const DEFAULT_ERRORS_TABLE = "errores_importacion";
+const SOURCE_COLUMN = "fuente";
+const ROW_DATA_COLUMN = "datos_fila";
+const VALIDATION_ERRORS_COLUMN = "errores_validacion";
 
 const EMAIL_REGEX = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$";
 const INTEGER_REGEX = "^[+-]?[0-9]+$";
@@ -628,7 +630,7 @@ function projectedCsvColumns(csvColumns, columnsRules, dimensions, loadOnly) {
 }
 
 function sourceNameFromCsvPath(csvPath) {
-  return path.basename(csvPath, path.extname(csvPath));
+  return path.basename(csvPath);
 }
 
 async function ensureStagingTable(client, schema, table, csvColumns) {
@@ -665,6 +667,147 @@ async function ensureStagingTable(client, schema, table, csvColumns) {
       `The existing staging table columns do not match the CSV headers. Expected ${JSON.stringify(columns)}, found ${JSON.stringify(existingColumns)}.`
     );
   }
+}
+
+function orderedTargetColumns(columnsRules) {
+  const columns = [];
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    if (rule.target) columns.push(String(rule.target));
+  }
+  if (new Set(columns).size !== columns.length) throw new Error("Multiple source columns map to the same target column.");
+  return columns;
+}
+
+async function recreateNormalizedStagingTable(client, schema, table, targetColumns) {
+  const reserved = new Set([SOURCE_COLUMN, ROW_DATA_COLUMN, VALIDATION_ERRORS_COLUMN]);
+  const conflicts = targetColumns.filter((column) => reserved.has(column));
+  if (conflicts.length) throw new Error(`Target columns use reserved staging names: ${conflicts.join(", ")}`);
+  const columns = [...targetColumns, SOURCE_COLUMN, ROW_DATA_COLUMN, VALIDATION_ERRORS_COLUMN];
+  const columnDefs = columns.map((column) => `${quoteIdent(column)} text`).join(",\n      ");
+  await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdent(schema)};`);
+  await client.query(`DROP TABLE IF EXISTS ${qualifiedTable(schema, table)};`);
+  await client.query(`CREATE TABLE ${qualifiedTable(schema, table)} (\n      ${columnDefs}\n    );`);
+}
+
+async function copyCsvToNormalizedStaging(
+  client,
+  schema,
+  table,
+  csvColumns,
+  selectedColumns,
+  targetColumns,
+  columnsRules,
+  dimensions,
+  runtime,
+  csvPath,
+  encoding,
+  delimiter,
+  logger,
+  debugEveryRows,
+  maxRows
+) {
+  const copyColumns = [...targetColumns, SOURCE_COLUMN, ROW_DATA_COLUMN, VALIDATION_ERRORS_COLUMN];
+  const sourceName = sourceNameFromCsvPath(csvPath);
+  const copySql = `COPY ${qualifiedTable(schema, table)} (${copyColumns.map(quoteIdent).join(", ")}) ` +
+    "FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '\"', ESCAPE '\"', NULL '')";
+  let copied = 0;
+  let rejected = 0;
+  let bytesRead = 0;
+  const fileSize = fs.statSync(csvPath).size;
+  const copyStartedAt = Date.now();
+  const selected = new Set(selectedColumns);
+  const byteCounter = new Transform({
+    decodeStrings: false,
+    transform(chunk, _encoding, callback) {
+      bytesRead += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk, encoding);
+      callback(null, chunk);
+    }
+  });
+  const parser = parse({
+    bom: true,
+    columns: csvColumns.map((column) => selected.has(column) ? column : false),
+    from_line: 2,
+    delimiter,
+    skip_empty_lines: false,
+    relax_column_count: false
+  });
+  const normalizer = new Transform({
+    objectMode: true,
+    transform(record, _encoding, callback) {
+      try {
+        copied += 1;
+        const normalized = normalizeAndValidateRecord(record, columnsRules, dimensions, runtime);
+        if (normalized.errors.length) rejected += 1;
+        if (debugEveryRows > 0 && copied % debugEveryRows === 0) {
+          const seconds = Math.max((Date.now() - copyStartedAt) / 1000, 0.001);
+          const progress = {
+            rowsProcessed: copied,
+            rowsRejected: rejected,
+            rowsPerSecond: Math.round(copied / seconds),
+            elapsedSeconds: Math.round(seconds)
+          };
+          if (!maxRows && fileSize > 0) {
+            const percent = Math.min((bytesRead / fileSize) * 100, 100);
+            progress.percent = Number(percent.toFixed(1));
+            progress.etaSeconds = percent > 0 ? Math.max(0, Math.round(seconds * (100 - percent) / percent)) : undefined;
+          }
+          logger.info("Streaming normalization progress", progress);
+        }
+        const values = targetColumns.map((column) => escapeCopyCsvValue(normalized.values[column]));
+        values.push(escapeCopyCsvValue(sourceName));
+        values.push(escapeCopyCsvValue(normalized.errors.length ? JSON.stringify(record) : null));
+        values.push(escapeCopyCsvValue(normalized.errors.length ? normalized.errors.join("; ") : null));
+        callback(null, values.join(",") + "\n");
+      } catch (error) {
+        callback(error);
+      }
+    }
+  });
+
+  await pipeline(
+    createCsvInputStream(csvPath, encoding, maxRows),
+    byteCounter,
+    parser,
+    normalizer,
+    client.query(copyFrom(copySql))
+  );
+  return { staged: copied, rejected, valid: copied - rejected };
+}
+
+async function insertStreamingErrors(client, importName, stagingSchema, stagingTable, errorsSchema, errorsTable) {
+  const result = await client.query(`
+    INSERT INTO ${qualifiedTable(errorsSchema, errorsTable)}
+      (nombre_importacion, tabla_temporal, datos_fila, motivo_error)
+    SELECT $1, $2, ${quoteIdent(ROW_DATA_COLUMN)}::jsonb, ${quoteIdent(VALIDATION_ERRORS_COLUMN)}
+    FROM ${qualifiedTable(stagingSchema, stagingTable)}
+    WHERE ${quoteIdent(VALIDATION_ERRORS_COLUMN)} IS NOT NULL;
+  `, [importName, `${stagingSchema}.${stagingTable}`]);
+  return result.rowCount;
+}
+
+function normalizedCastExpr(column, dataType) {
+  const value = `NULLIF(${quoteIdent(column)}, '')`;
+  if (dataType === "text") return value;
+  return `${value}::${dataType}`;
+}
+
+async function migrateNormalizedRows(client, stagingSchema, stagingTable, target, columnsRules, dimensions) {
+  const targetColumns = orderedTargetColumns(columnsRules);
+  const expressions = [];
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    if (!rule.target) continue;
+    expressions.push(normalizedCastExpr(String(rule.target), targetColumnType(sourceColumn, rule, dimensions)));
+  }
+  const result = await client.query(`
+    INSERT INTO ${qualifiedTable(String(target.schema || DEFAULT_SCHEMA), String(target.table))}
+      (${[...targetColumns, SOURCE_COLUMN].map(quoteIdent).join(", ")})
+    SELECT ${[...expressions, quoteIdent(SOURCE_COLUMN)].join(", ")}
+    FROM ${qualifiedTable(stagingSchema, stagingTable)}
+    WHERE ${quoteIdent(VALIDATION_ERRORS_COLUMN)} IS NULL;
+  `);
+  return result.rowCount;
 }
 
 async function truncateStaging(client, schema, table) {
@@ -790,11 +933,11 @@ async function ensureImportErrorsTable(client, schema, table) {
   await client.query(`
     CREATE TABLE IF NOT EXISTS ${qualifiedTable(schema, table)} (
       id bigserial PRIMARY KEY,
-      import_name text NOT NULL,
-      staging_table text NOT NULL,
-      row_data jsonb NOT NULL,
-      error_reason text NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT now()
+      nombre_importacion text NOT NULL,
+      tabla_temporal text NOT NULL,
+      datos_fila jsonb NOT NULL,
+      motivo_error text NOT NULL,
+      creado_en timestamptz NOT NULL DEFAULT now()
     );
   `);
 }
@@ -803,8 +946,8 @@ async function clearPreviousImportErrors(client, schema, table, importName, stag
   await client.query(
     `
     DELETE FROM ${qualifiedTable(schema, table)}
-    WHERE import_name = $1
-      AND staging_table = $2;
+    WHERE nombre_importacion = $1
+      AND tabla_temporal = $2;
     `,
     [importName, `${stagingSchema}.${stagingTable}`]
   );
@@ -853,6 +996,237 @@ function transformSqlExpr(expression, transform, valueType) {
   if (!transform) return expression;
 
   throw new Error(`Unsupported transform: ${transform}`);
+}
+
+function normalizeAscii(value) {
+  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function initcap(value) {
+  return String(value).toLocaleLowerCase().replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (_match, prefix, letter) => {
+    return `${prefix}${letter.toLocaleUpperCase()}`;
+  });
+}
+
+function strictDate(value, compact) {
+  const match = compact
+    ? /^(\d{4})(\d{2})(\d{2})$/.exec(value)
+    : /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return undefined;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function normalizePrimitiveValue(rawValue, transform, valueType) {
+  if (rawValue === null || rawValue === undefined || String(rawValue).trim() === "") {
+    return { value: null, valid: true };
+  }
+  const trimmed = String(rawValue).trim();
+  const effectiveTransform = transform || valueType;
+
+  if (effectiveTransform === "numeric_comma" || valueType === "numeric") {
+    if (!(new RegExp(NUMERIC_REGEX)).test(trimmed)) return { value: null, valid: false };
+    return { value: trimmed.replace(",", "."), valid: true };
+  }
+  if (effectiveTransform === "integer" || valueType === "integer" || effectiveTransform === "bigint" || valueType === "bigint") {
+    if (!(new RegExp(INTEGER_REGEX)).test(trimmed)) return { value: null, valid: false };
+    return { value: BigInt(trimmed).toString(), valid: true };
+  }
+  if (effectiveTransform === "date_yyyymmdd") {
+    const value = strictDate(trimmed, true);
+    return { value: value || null, valid: Boolean(value) };
+  }
+  if (effectiveTransform === "date_ymd" || valueType === "date") {
+    const value = strictDate(trimmed, false);
+    return { value: value || null, valid: Boolean(value) };
+  }
+  if (valueType === "email" && !(new RegExp(EMAIL_REGEX, "i")).test(trimmed)) {
+    return { value: null, valid: false };
+  }
+
+  if (!transform || transform === "raw") return { value: transform === "raw" ? String(rawValue) : trimmed, valid: true };
+  if (transform === "trim") return { value: trimmed, valid: true };
+  if (transform === "lower_trim") return { value: trimmed.toLocaleLowerCase(), valid: true };
+  if (transform === "upper_trim") return { value: trimmed.toLocaleUpperCase(), valid: true };
+  if (transform === "initcap_trim") return { value: initcap(trimmed), valid: true };
+  if (transform === "ascii_lower_trim") return { value: normalizeAscii(trimmed.toLocaleLowerCase()), valid: true };
+  if (transform === "ascii_upper_trim") return { value: normalizeAscii(trimmed.toLocaleUpperCase()), valid: true };
+  throw new Error(`Unsupported transform: ${transform}`);
+}
+
+function typeErrorReason(sourceColumn, rule) {
+  if (rule.type === "email") return `${sourceColumn} email invalido`;
+  if (rule.type === "numeric") return `${sourceColumn} numerico invalido`;
+  if (rule.type === "integer" || rule.type === "bigint") return `${sourceColumn} entero invalido`;
+  if (rule.type === "date") return `${sourceColumn} fecha invalida`;
+  return `${sourceColumn} formato invalido`;
+}
+
+function catalogValue(value) {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value);
+}
+
+async function loadCatalogRows(client, schema, table, selectedColumns, where = {}) {
+  const whereEntries = Object.entries(where);
+  const conditions = whereEntries.map(([column], index) => `${quoteIdent(column)} = $${index + 1}`);
+  const sql = `SELECT ${selectedColumns.map(quoteIdent).join(", ")} ` +
+    `FROM ${qualifiedTable(schema, table)}` +
+    (conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "");
+  const result = await client.query(sql, whereEntries.map(([, value]) => value));
+  return result.rows;
+}
+
+function addCatalogMatch(map, matchValue, resultValue) {
+  if (matchValue === null) return;
+  const matches = map.get(matchValue) || [];
+  matches.push(resultValue);
+  map.set(matchValue, matches);
+}
+
+async function buildStreamingRuntime(client, columnsRules, dimensions, logger) {
+  const runtime = { references: new Map(), dimensions: new Map(), lookups: new Map(), uniqueCsv: new Map() };
+
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    if (parseBool(rule.unique_csv)) runtime.uniqueCsv.set(sourceColumn, new Set());
+
+    if (rule.references) {
+      const ref = ensureObject(rule.references, `${sourceColumn}.references`);
+      const rows = await loadCatalogRows(
+        client,
+        String(ref.schema || DEFAULT_SCHEMA),
+        String(ref.table),
+        [String(ref.column)],
+        ensureObject(ref.where || {}, `${sourceColumn}.references.where`)
+      );
+      const map = new Map();
+      for (const row of rows) {
+        const actualValue = catalogValue(row[String(ref.column)]);
+        const comparable = normalizePrimitiveValue(actualValue, rule.transform, rule.type);
+        if (comparable.valid) addCatalogMatch(map, catalogValue(comparable.value), actualValue);
+      }
+      runtime.references.set(sourceColumn, map);
+      logger.info("Reference catalog loaded", { sourceColumn, rows: rows.length, table: `${ref.schema || DEFAULT_SCHEMA}.${ref.table}` });
+    }
+
+    if (rule.dimension) {
+      const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
+      if (dimension.createMissing) {
+        throw new Error(`dimensions.${dimension.name}.create_missing=true is not supported by streaming validation.`);
+      }
+      const rows = await loadCatalogRows(client, dimension.schema, dimension.table, [dimension.keyColumn, dimension.valueColumn]);
+      const map = new Map();
+      for (const row of rows) {
+        const normalized = normalizePrimitiveValue(
+          row[dimension.valueColumn],
+          dimension.lookupTransform,
+          dimension.type
+        );
+        if (normalized.valid) addCatalogMatch(map, catalogValue(normalized.value), catalogValue(row[dimension.keyColumn]));
+      }
+      runtime.dimensions.set(sourceColumn, { dimension, map });
+      logger.info("Dimension catalog loaded", { sourceColumn, rows: rows.length, table: `${dimension.schema}.${dimension.table}` });
+    }
+
+    const lookup = normalizeLookup(rule.lookup, sourceColumn);
+    if (lookup) {
+      const rows = await loadCatalogRows(client, lookup.schema, lookup.table, [lookup.matchColumn, lookup.valueColumn]);
+      const map = new Map();
+      for (const row of rows) {
+        const normalized = normalizePrimitiveValue(row[lookup.matchColumn], lookup.lookupTransform, lookup.type);
+        if (normalized.valid) addCatalogMatch(map, catalogValue(normalized.value), catalogValue(row[lookup.valueColumn]));
+      }
+      runtime.lookups.set(sourceColumn, { lookup, map });
+      logger.info("Lookup catalog loaded", { sourceColumn, rows: rows.length, table: `${lookup.schema}.${lookup.table}` });
+    }
+  }
+  return runtime;
+}
+
+function normalizeAndValidateRecord(record, columnsRules, dimensions, runtime) {
+  const values = {};
+  const errors = [];
+
+  for (const [sourceColumn, rawRule] of Object.entries(columnsRules)) {
+    const rule = ensureObject(rawRule || {}, `columns.${sourceColumn}`);
+    const rawValue = record[sourceColumn];
+    const empty = rawValue === null || rawValue === undefined || String(rawValue).trim() === "";
+    if (parseBool(rule.required) && empty) errors.push(`${sourceColumn} requerido`);
+
+    const normalized = normalizePrimitiveValue(rawValue, rule.transform, rule.type);
+    if (!empty && !normalized.valid) errors.push(typeErrorReason(sourceColumn, rule));
+    if (!empty && normalized.valid && rule.regex && !(new RegExp(rule.regex)).test(String(rawValue))) {
+      errors.push(`${sourceColumn} formato invalido`);
+    }
+    if (!empty && normalized.valid && ("min" in rule) && Number(normalized.value) < Number(rule.min)) {
+      errors.push(`${sourceColumn} menor que minimo`);
+    }
+    if (!empty && normalized.valid && ("max" in rule) && Number(normalized.value) > Number(rule.max)) {
+      errors.push(`${sourceColumn} mayor que maximo`);
+    }
+
+    let targetValue = normalized.value;
+    const reference = runtime.references.get(sourceColumn);
+    if (!empty && normalized.valid && reference) {
+      const matches = reference.get(catalogValue(normalized.value)) || [];
+      if (matches.length !== 1) errors.push(`${sourceColumn} referencia inexistente o ambigua`);
+      else targetValue = matches[0];
+    }
+
+    const lookupRuntime = runtime.lookups.get(sourceColumn);
+    const dimensionRuntime = runtime.dimensions.get(sourceColumn);
+    let dimensionMatches;
+    if (!empty && dimensionRuntime) {
+      const sourceValue = normalizePrimitiveValue(
+        rawValue,
+        rule.transform || dimensionRuntime.dimension.transform,
+        rule.type || dimensionRuntime.dimension.type
+      );
+      dimensionMatches = sourceValue.valid ? dimensionRuntime.map.get(catalogValue(sourceValue.value)) || [] : [];
+      if (!lookupRuntime && dimensionMatches.length !== 1) {
+        errors.push(`${sourceColumn} dimension inexistente o ambigua`);
+      } else if (!lookupRuntime) {
+        targetValue = dimensionMatches[0];
+      }
+    }
+
+    if (lookupRuntime) {
+      const lookupRaw = record[lookupRuntime.lookup.sourceColumn];
+      const lookupValue = normalizePrimitiveValue(lookupRaw, lookupRuntime.lookup.transform, lookupRuntime.lookup.type);
+      const lookupMatches = lookupValue.valid && lookupValue.value !== null
+        ? lookupRuntime.map.get(catalogValue(lookupValue.value)) || []
+        : [];
+      if (lookupMatches.length !== 1) {
+        errors.push(`${sourceColumn} lookup inexistente o ambiguo`);
+      } else {
+        targetValue = lookupMatches[0];
+        if (!empty && dimensionRuntime) {
+          if (!dimensionMatches?.length) {
+            errors.push(`${sourceColumn} dimension inexistente`);
+          } else if (!dimensionMatches.some((value) => catalogValue(value) === catalogValue(targetValue))) {
+            errors.push(`${sourceColumn} inconsistente con ${lookupRuntime.lookup.sourceColumn}`);
+          }
+        }
+      }
+    }
+
+    const uniqueValues = runtime.uniqueCsv.get(sourceColumn);
+    if (!empty && normalized.valid && uniqueValues) {
+      const comparable = catalogValue(normalized.value);
+      if (uniqueValues.has(comparable)) errors.push(`${sourceColumn} duplicado en csv`);
+      else uniqueValues.add(comparable);
+    }
+
+    if (rule.target) values[String(rule.target)] = targetValue;
+  }
+
+  return { values, errors };
 }
 
 function dimensionValueExpr(alias, sourceColumn, rule, dimensions) {
@@ -1035,7 +1409,7 @@ function buildValidatedCte(columnsRules, stagingSchema, stagingTable, target, di
     WITH validated AS (
       SELECT
         ${quoteIdent("s")}.*,
-        ${errorExpr} AS validation_errors
+        ${errorExpr} AS errores_validacion
       FROM ${qualifiedTable(stagingSchema, stagingTable)} ${quoteIdent("s")}
     )
   `;
@@ -1047,14 +1421,14 @@ async function insertValidationErrors(client, importName, stagingSchema, staging
   const result = await client.query(`
     ${cte}
     INSERT INTO ${qualifiedTable(errorsSchema, errorsTable)}
-      (import_name, staging_table, row_data, error_reason)
+      (nombre_importacion, tabla_temporal, datos_fila, motivo_error)
     SELECT
       ${sqlLiteral(importName)},
       ${sqlLiteral(stagingName)},
-      to_jsonb(validated) - 'validation_errors',
-      array_to_string(validation_errors, '; ')
+      to_jsonb(validated) - 'errores_validacion',
+      array_to_string(errores_validacion, '; ')
     FROM validated
-    WHERE cardinality(validation_errors) > 0;
+    WHERE cardinality(errores_validacion) > 0;
   `);
   return result.rowCount;
 }
@@ -1194,12 +1568,17 @@ async function ensureTargetTable(client, target, columnsRules, dimensions) {
   if (primaryKey.length > 0) {
     columnDefs.push(`PRIMARY KEY (${primaryKey.map(quoteIdent).join(", ")})`);
   }
+  columnDefs.push(`${quoteIdent(SOURCE_COLUMN)} text NOT NULL`);
 
   await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdent(targetSchema)};`);
   await client.query(`
     CREATE TABLE IF NOT EXISTS ${qualifiedTable(targetSchema, targetTable)} (
       ${columnDefs.join(",\n      ")}
     );
+  `);
+  await client.query(`
+    ALTER TABLE ${qualifiedTable(targetSchema, targetTable)}
+    ADD COLUMN IF NOT EXISTS ${quoteIdent(SOURCE_COLUMN)} text;
   `);
 }
 
@@ -1234,7 +1613,7 @@ function targetForeignKeys(target, columnsRules, dimensions) {
       const ref = ensureObject(rule.references, `${sourceColumn}.references`);
       const fixed = Object.entries(ensureObject(ref.where || {}, `${sourceColumn}.references.where`));
       const generatedColumns = fixed.map(([column, value]) => ({
-        name: databaseObjectName("ref", [targetColumn, column]),
+        name: databaseObjectName("referencia", [targetColumn, column]),
         value
       }));
       specs.push({
@@ -1354,6 +1733,9 @@ async function migrateValidRows(client, stagingSchema, stagingTable, target, col
     selectExprs.push(migratedValueExpr(sourceColumn, rule, dimensions));
   }
 
+  targetColumns.push(SOURCE_COLUMN);
+  selectExprs.push(col("validated", SOURCE_COLUMN));
+
   if (targetColumns.length === 0) return 0;
 
   const cte = buildValidatedCte(columnsRules, stagingSchema, stagingTable, target, dimensions);
@@ -1364,7 +1746,7 @@ async function migrateValidRows(client, stagingSchema, stagingTable, target, col
     SELECT
       ${selectExprs.join(",\n      ")}
     FROM validated
-    WHERE cardinality(validation_errors) = 0;
+    WHERE cardinality(errores_validacion) = 0;
   `);
   return result.rowCount;
 }
@@ -1469,56 +1851,11 @@ async function processImport(args) {
       return;
     }
 
-    logger.info("Ensuring staging table");
-    await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, selectedColumns);
-    if (settings.truncateBeforeLoad) {
-      await runLoggedOperation({
-        ...progress,
-        label: "Truncating staging table",
-        operation: () => truncateStaging(client, settings.stagingSchema, settings.stagingTable)
-      });
-    }
-
-    const staged = await runLoggedOperation({
-      ...progress,
-      label: "COPY to staging",
-      details: { file: settings.csvPath },
-      operation: () => copyCsvToStaging(
-        client,
-        settings.stagingSchema,
-        settings.stagingTable,
-        columns,
-        selectedColumns,
-        settings.csvPath,
-        settings.encoding,
-        settings.delimiter,
-        logger,
-        settings.debugEveryRows,
-        settings.maxRows
-      )
-    });
-    logger.info("COPY result", { staged });
-
+    let staged = 0;
     let rejected = 0;
     let migrated = 0;
 
     if (Object.keys(rules).length > 0 && !settings.loadOnly) {
-      if (Object.keys(dimensions).length > 0) {
-        const dimensionsInserted = await runLoggedOperation({
-          ...progress,
-          label: "Populating dimensions from staging",
-          operation: () => populateDimensions(
-            client,
-            settings.stagingSchema,
-            settings.stagingTable,
-            rules,
-            dimensions,
-            logger
-          )
-        });
-        logger.info("Dimensions populated", { inserted: dimensionsInserted });
-      }
-
       logger.info("Ensuring import errors table");
       await ensureImportErrorsTable(client, settings.errorsSchema, settings.errorsTable);
       await runLoggedOperation({
@@ -1533,23 +1870,8 @@ async function processImport(args) {
           settings.stagingTable
         )
       });
-      rejected = await runLoggedOperation({
-        ...progress,
-        label: "Validating rows and recording errors",
-        operation: () => insertValidationErrors(
-          client,
-          importName,
-          settings.stagingSchema,
-          settings.stagingTable,
-          settings.errorsSchema,
-          settings.errorsTable,
-          rules,
-          target,
-          dimensions
-        )
-      });
-      logger.info("Validation errors inserted", { rejected });
 
+      let foreignKeys = [];
       if (target) {
         logger.info("Ensuring target table", {
           target: `${target.schema || DEFAULT_SCHEMA}.${target.table}`
@@ -1559,7 +1881,7 @@ async function processImport(args) {
           label: "Ensuring target table structure",
           operation: () => ensureTargetTable(client, target, rules, dimensions)
         });
-        const foreignKeys = await ensureTargetForeignKeys(client, target, rules, dimensions, progress);
+        foreignKeys = await ensureTargetForeignKeys(client, target, rules, dimensions, progress);
 
         const targetMode = target.mode || "replace";
         if (targetMode === "replace") {
@@ -1574,19 +1896,121 @@ async function processImport(args) {
         } else if (targetMode !== "append") {
           throw new Error(`Unsupported target.mode: ${targetMode}`);
         }
+      }
 
+      const runtime = await runLoggedOperation({
+        ...progress,
+        label: "Loading validation catalogs into memory",
+        operation: () => buildStreamingRuntime(client, rules, dimensions, logger)
+      });
+      const targetColumns = orderedTargetColumns(rules);
+      await runLoggedOperation({
+        ...progress,
+        label: "Recreating normalized staging table",
+        operation: () => recreateNormalizedStagingTable(
+          client,
+          settings.stagingSchema,
+          settings.stagingTable,
+          targetColumns
+        )
+      });
+      const normalizedResult = await runLoggedOperation({
+        ...progress,
+        label: "Streaming normalization and COPY to staging",
+        details: { file: settings.csvPath },
+        operation: () => copyCsvToNormalizedStaging(
+          client,
+          settings.stagingSchema,
+          settings.stagingTable,
+          columns,
+          selectedColumns,
+          targetColumns,
+          rules,
+          dimensions,
+          runtime,
+          settings.csvPath,
+          settings.encoding,
+          settings.delimiter,
+          logger,
+          settings.debugEveryRows,
+          settings.maxRows
+        )
+      });
+      staged = normalizedResult.staged;
+      rejected = await runLoggedOperation({
+        ...progress,
+        label: "Recording streaming validation errors",
+        operation: () => insertStreamingErrors(
+          client,
+          importName,
+          settings.stagingSchema,
+          settings.stagingTable,
+          settings.errorsSchema,
+          settings.errorsTable
+        )
+      });
+      logger.info("Streaming validation result", {
+        staged,
+        valid: normalizedResult.valid,
+        rejected
+      });
+
+      if (target) {
         migrated = await runLoggedOperation({
           ...progress,
           label: "Migrating valid rows to target",
           details: { target: `${target.schema || DEFAULT_SCHEMA}.${target.table}` },
-          operation: () => migrateValidRows(client, settings.stagingSchema, settings.stagingTable, target, rules, dimensions)
+          operation: () => migrateNormalizedRows(
+            client,
+            settings.stagingSchema,
+            settings.stagingTable,
+            target,
+            rules,
+            dimensions
+          )
         });
         logger.info("Valid rows migrated", { migrated });
         await validateTargetForeignKeys(client, target, foreignKeys, progress);
       }
     } else if (settings.loadOnly) {
+      logger.info("Ensuring raw staging table for loadOnly mode");
+      await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, selectedColumns);
+      if (settings.truncateBeforeLoad) await truncateStaging(client, settings.stagingSchema, settings.stagingTable);
+      staged = await runLoggedOperation({
+        ...progress,
+        label: "COPY raw CSV to staging",
+        operation: () => copyCsvToStaging(
+          client,
+          settings.stagingSchema,
+          settings.stagingTable,
+          columns,
+          selectedColumns,
+          settings.csvPath,
+          settings.encoding,
+          settings.delimiter,
+          logger,
+          settings.debugEveryRows,
+          settings.maxRows
+        )
+      });
       logger.info("Skipping validation and migration because loadOnly=true");
     } else {
+      logger.info("Ensuring raw staging table because no column rules are configured");
+      await ensureStagingTable(client, settings.stagingSchema, settings.stagingTable, selectedColumns);
+      if (settings.truncateBeforeLoad) await truncateStaging(client, settings.stagingSchema, settings.stagingTable);
+      staged = await copyCsvToStaging(
+        client,
+        settings.stagingSchema,
+        settings.stagingTable,
+        columns,
+        selectedColumns,
+        settings.csvPath,
+        settings.encoding,
+        settings.delimiter,
+        logger,
+        settings.debugEveryRows,
+        settings.maxRows
+      );
       logger.info("Skipping validation and migration because no column rules are configured");
     }
 
@@ -1708,9 +2132,12 @@ if (require.main === module) {
 module.exports = {
   buildValidatedCte,
   databaseObjectName,
+  normalizeAndValidateRecord,
   normalizeDimensions,
+  normalizePrimitiveValue,
   projectedCsvColumns,
   runLoggedOperation,
+  sourceNameFromCsvPath,
   targetForeignKeys,
   validateDimensions
 };

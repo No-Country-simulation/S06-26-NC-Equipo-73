@@ -4,7 +4,7 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_cursos_2024
+  table: temporal_cursos_2024
   truncate_before_load: true
   drop_after_load: true
 target:
@@ -13,7 +13,7 @@ target:
   mode: replace
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -25,22 +25,22 @@ columns:
     required: true
     type: integer
   NO_REGIAO:
-    target: region
+    target: nombre_region
     transform: initcap_trim
   CO_REGIAO:
     target: codigo_region
     type: integer
   NO_UF:
-    target: estado
+    target: nombre_estado
     transform: initcap_trim
   SG_UF:
-    target: uf
+    target: sigla_uf
     transform: upper_trim
   CO_UF:
     target: codigo_uf
     type: integer
   NO_MUNICIPIO:
-    target: municipio
+    target: nombre_municipio
     transform: initcap_trim
   CO_MUNICIPIO:
     target: codigo_municipio
@@ -70,10 +70,10 @@ columns:
     target: categoria_administrativa
     type: integer
   NO_CINE_ROTULO:
-    target: rotulo_cine
+    target: nombre_clasificacion_cine
     transform: initcap_trim
   CO_CINE_ROTULO:
-    target: codigo_rotulo_cine
+    target: codigo_clasificacion_cine
     transform: trim
   CO_CINE_AREA_GERAL:
     target: codigo_area_general_cine
@@ -130,7 +130,7 @@ columns:
     type: integer
     min: 0
   QT_SIT_TRANCADA:
-    target: matriculas_trancadas
+    target: matriculas_suspendidas
     type: integer
     min: 0
   QT_SIT_DESVINCULADO:

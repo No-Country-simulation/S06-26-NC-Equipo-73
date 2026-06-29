@@ -4,16 +4,16 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_cagedest_012019
+  table: temporal_movimientos_laborales_201901
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
-  table: cagedest_012019
+  table: movimientos_laborales_201901
   mode: replace
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -21,11 +21,11 @@ load:
   debug_every_rows: 100000
 columns:
   Admitidos/Desligados:
-    target: tipo_movimiento_admitido_desligado
+    target: tipo_alta_baja_laboral
     required: true
     transform: trim
   Competência Declarada:
-    target: competencia_declarada
+    target: periodo_declarado
     required: true
     type: integer
   Município:
@@ -44,17 +44,17 @@ columns:
       column: codigo_ocupacion
     transform: trim
   CNAE 1.0 Classe:
-    target: codigo_clase_cnae_1
+    target: codigo_clase_cnae_version_1
     transform: trim
   CNAE 2.0 Classe:
-    target: codigo_clase_cnae_2
+    target: codigo_clase_cnae_version_2
     references:
       schema: public
       table: clases_cnae
       column: codigo_clase
     transform: trim
   CNAE 2.0 Subclas:
-    target: codigo_subclase_cnae_2
+    target: codigo_subclase_cnae_version_2
     references:
       schema: public
       table: subclases_cnae
@@ -71,7 +71,7 @@ columns:
     type: integer
     min: 0
   IBGE Subsetor:
-    target: subsetor_ibge
+    target: subsector_ibge
     transform: trim
   Idade:
     target: edad
@@ -92,7 +92,7 @@ columns:
     transform: numeric_comma
     min: 0
   Saldo Mov:
-    target: saldo_movimiento
+    target: balance_movimiento
     type: integer
   Sexo:
     target: sexo

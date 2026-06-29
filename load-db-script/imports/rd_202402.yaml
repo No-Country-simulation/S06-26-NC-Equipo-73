@@ -4,16 +4,16 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_rd_202402
+  table: temporal_hospitalizaciones_febrero_2024
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
-  table: hospitalizaciones_rd_202402
+  table: hospitalizaciones_febrero_2024
   mode: replace
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -21,7 +21,7 @@ load:
   debug_every_rows: 100000
 columns:
   UF_ZI:
-    target: uf_zi
+    target: codigo_municipio_gestor
     required: true
     type: integer
   ANO_CMPT:
@@ -35,12 +35,12 @@ columns:
     min: 1
     max: 12
   ESPEC:
-    target: codigo_especialidad_lecho
+    target: codigo_especialidad_cama
     required: true
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: ESPEC
@@ -52,12 +52,12 @@ columns:
     required: true
     transform: trim
   IDENT:
-    target: codigo_identificacion
+    target: codigo_tipo_aih
     required: true
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: IDENT
@@ -77,7 +77,7 @@ columns:
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: SEXO
@@ -96,7 +96,7 @@ columns:
     type: numeric
     min: 0
   VAL_SADT:
-    target: valor_sadt
+    target: valor_servicios_diagnostico_tratamiento
     type: numeric
     min: 0
   VAL_TOT:
@@ -104,11 +104,11 @@ columns:
     type: numeric
     min: 0
   VAL_UTI:
-    target: valor_uti
+    target: valor_unidad_cuidados_intensivos
     type: numeric
     min: 0
   US_TOT:
-    target: valor_total_usd
+    target: valor_total_dolares
     type: numeric
     min: 0
   DT_INTER:
@@ -130,7 +130,7 @@ columns:
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: COBRANCA
@@ -141,11 +141,11 @@ columns:
     target: naturaleza_juridica
     transform: trim
   GESTAO:
-    target: codigo_gestion
+    target: codigo_tipo_gestion_hospital
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: GESTAO
@@ -154,11 +154,11 @@ columns:
     required: true
     type: integer
   COD_IDADE:
-    target: codigo_tipo_edad
+    target: codigo_unidad_edad
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: COD_IDADE
@@ -171,11 +171,11 @@ columns:
     type: integer
     min: 0
   MORTE:
-    target: codigo_muerte
+    target: codigo_indicador_muerte
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: MORTE
@@ -183,11 +183,11 @@ columns:
     target: nacionalidad
     transform: trim
   CAR_INT:
-    target: codigo_caracter_internacion
+    target: codigo_caracter_hospitalizacion
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: CAR_INT
@@ -196,16 +196,16 @@ columns:
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: INSTRU
   CONTRACEP1:
-    target: codigo_anticoncepcion_1
+    target: codigo_anticonceptivo_1
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: CONTRACEP1
@@ -214,12 +214,12 @@ columns:
     type: integer
     references:
       schema: public
-      table: codigos_hospitalares
+      table: codigos_hospitalarios
       column: codigo
       where:
         variable: RACA_COR
   CNES:
-    target: cnes
+    target: codigo_cnes
     transform: trim
   COMPLEX:
     target: codigo_complejidad

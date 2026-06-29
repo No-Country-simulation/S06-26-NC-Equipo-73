@@ -1,6 +1,8 @@
 # Load DB Script
 
-Importador configurable de CSV a PostgreSQL. El script lee perfiles definidos en `config.yaml`, carga el CSV a una tabla de staging y, si hay reglas de columnas, valida y migra las filas válidas a una tabla destino.
+Importador configurable de CSV a PostgreSQL. El script lee perfiles definidos en `config.yaml`,
+precarga los catalogos pequeños en memoria y normaliza/valida cada fila mientras transmite el CSV.
+PostgreSQL recibe un staging ya normalizado y migra las filas validas con operaciones lineales.
 
 ## Requisitos
 
@@ -48,10 +50,18 @@ Cada perfil define:
 - `dimensions`: tablas de referencia usadas para convertir valores de texto a codigos.
 - `load`: opciones de ejecucion, como `dry_run`, `load_only`, `debug` y `max_rows`.
 
-El staging solo contiene las columnas declaradas en `columns`, las columnas auxiliares usadas por
-`lookup` o `dimensions.source_column`, y la columna tecnica `source`. El encabezado completo sigue
-validandose, pero los campos no configurados no se materializan ni se envian a PostgreSQL. En
-`load_only` se conservan todas las columnas porque ese modo carga el CSV completo deliberadamente.
+Durante una carga normal, Node resuelve tipos, transformaciones, minimos/maximos, referencias,
+lookups y dimensiones mediante mapas en memoria. El staging contiene las columnas destino ya
+normalizadas y tres columnas tecnicas: `fuente`, `datos_fila` y `errores_validacion`. `datos_fila` solo
+se almacena para filas rechazadas. El encabezado completo sigue validandose, pero los campos no
+configurados no se materializan ni se envian a PostgreSQL. En `load_only` se conservan todas las
+columnas porque ese modo carga el CSV completo deliberadamente.
+
+Cada fila migrada a una tabla destino incluye tambien la columna `fuente`, cuyo valor es el nombre
+del archivo CSV de origen, incluida la extension (por ejemplo, `clusters.csv`).
+
+Este diseño evita consultas correlacionadas por fila y evita calcular las mismas validaciones una
+vez para errores y otra vez para la migracion. PostgreSQL conserva las FK como ultima proteccion.
 
 Por defecto, los imports se ejecutan aunque la tabla destino ya exista. En `target` se puede usar
 `skip_if_exists: true` para omitir explicitamente un import cuando la tabla destino ya existe:
@@ -69,7 +79,7 @@ Esta verificacion mira solo si la tabla existe. Una tabla vacia tambien sera omi
 Las reglas `references` descartan las filas cuya referencia no existe y crean claves foraneas en
 la tabla destino. Cuando `references.where` contiene un discriminador fijo, el importador crea una
 columna generada y una FK compuesta. Esto permite, por ejemplo, referenciar
-`codigos_hospitalares(variable, codigo)` desde los campos de RD.
+`codigos_hospitalarios(variable, codigo)` desde los campos de RD.
 
 Una columna puede obtener su valor destino mediante `lookup` cuando el valor debe derivarse de otra
 columna del CSV. Las dimensiones sin `create_missing` solo aceptan valores que resuelvan exactamente
@@ -92,7 +102,7 @@ En `staging`, `drop_after_load: true` elimina la tabla staging al terminar una i
 ```yaml
 staging:
   schema: public
-  table: stg_municipios
+  table: temporal_municipios
   truncate_before_load: true
   drop_after_load: true
 ```

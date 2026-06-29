@@ -4,17 +4,17 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_municipios
+  table: temporal_municipios
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
   table: municipios
   mode: replace
-  primary_key: codigo_ibge
+  primary_key: codigo_municipio_ibge
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -22,22 +22,22 @@ load:
   debug_every_rows: 100000
 columns:
   CÓDIGO DO MUNICÍPIO - TOM:
-    target: codigo_tom
+    target: codigo_municipio_tom
     required: true
     type: integer
   CÓDIGO DO MUNICÍPIO - IBGE:
-    target: codigo_ibge
+    target: codigo_municipio_ibge
     required: true
     type: integer
   MUNICÍPIO - TOM:
-    target: nombre_tom
+    target: nombre_municipio_tom
     required: true
     transform: initcap_trim
   MUNICÍPIO - IBGE:
-    target: nombre
+    target: nombre_municipio
     required: true
     transform: initcap_trim
   UF:
-    target: uf
+    target: codigo_uf
     required: true
     transform: upper_trim

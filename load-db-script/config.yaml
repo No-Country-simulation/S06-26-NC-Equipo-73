@@ -10,8 +10,10 @@ import_order:
   - municipios
   - clusters
   - antenas
+  - assinantes
   - tensor_concentracao
   - mobilidade
+  - trajetos_comuns
   - cursos
   - ocupaciones_cbo
   - clases_cnae

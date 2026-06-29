@@ -4,7 +4,7 @@ csv:
   delimiter: ;
 staging:
   schema: public
-  table: stg_ocupaciones_cbo
+  table: temporal_ocupaciones_cbo
   truncate_before_load: true
   drop_after_load: true
 target:
@@ -14,7 +14,7 @@ target:
   primary_key: codigo_ocupacion
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false

@@ -4,17 +4,17 @@ csv:
   delimiter: ","
 staging:
   schema: public
-  table: stg_antenas_flp
+  table: temporal_antenas
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
-  table: antenas_flp
+  table: antenas
   mode: replace
   primary_key: ecgi
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -24,9 +24,9 @@ dimensions:
   municipios:
     schema: public
     table: municipios
-    key_column: codigo_ibge
+    key_column: codigo_municipio_ibge
     key_type: integer
-    value_column: nombre
+    value_column: nombre_municipio
     transform: ascii_lower_trim
     lookup_transform: ascii_lower_trim
     create_table: false
@@ -37,22 +37,22 @@ columns:
     required: true
     type: bigint
   cluster:
-    target: cluster
+    target: nombre_zona
     required: true
     references:
       schema: public
-      table: clusters
-      column: cluster
+      table: zonas
+      column: nombre_zona
     transform: upper_trim
   municipio:
-    target: municipio_codigo
+    target: codigo_municipio
     required: true
     dimension: municipios
   lat:
-    target: lat
+    target: latitud
     required: true
     type: numeric
   lon:
-    target: lon
+    target: longitud
     required: true
     type: numeric

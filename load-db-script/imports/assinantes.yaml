@@ -1,0 +1,76 @@
+csv:
+  file_path: visent/small/assinantes.csv
+  encoding: utf8
+  delimiter: ","
+staging:
+  schema: public
+  table: temporal_suscriptores
+  truncate_before_load: true
+  drop_after_load: true
+target:
+  schema: public
+  table: suscriptores
+  mode: replace
+  primary_key: hash_suscriptor
+errors:
+  schema: public
+  table: errores_importacion
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+dimensions:
+  municipios:
+    schema: public
+    table: municipios
+    key_column: codigo_municipio_ibge
+    key_type: integer
+    value_column: nombre_municipio
+    transform: ascii_lower_trim
+    lookup_transform: ascii_lower_trim
+    create_table: false
+    create_missing: false
+columns:
+  assinante_hash:
+    target: hash_suscriptor
+    required: true
+    type: bigint
+  home_cluster:
+    target: zona_residencia
+    required: true
+    references:
+      schema: public
+      table: zonas
+      column: nombre_zona
+    transform: ascii_upper_trim
+  home_municipio:
+    target: codigo_municipio_residencia
+    required: true
+    dimension: municipios
+    lookup:
+      schema: public
+      table: zonas
+      source_column: home_cluster
+      match_column: nombre_zona
+      value_column: codigo_municipio
+      transform: ascii_upper_trim
+      lookup_transform: ascii_upper_trim
+  income_cluster:
+    target: segmento_ingresos
+    required: true
+    transform: upper_trim
+  age_group:
+    target: grupo_edad
+    required: true
+    transform: trim
+  mobility_pattern:
+    target: patron_movilidad
+    required: true
+    transform: upper_trim
+  flag_flagship:
+    target: indicador_dispositivo_insignia
+    required: true
+    type: integer
+    min: 0
+    max: 1

@@ -4,16 +4,16 @@ csv:
   delimiter: ","
 staging:
   schema: public
-  table: stg_tensor_concentracao
+  table: temporal_tensor_concentracion
   truncate_before_load: true
   drop_after_load: true
 target:
   schema: public
-  table: tensor_concentracao
+  table: tensor_concentracion
   mode: replace
 errors:
   schema: public
-  table: import_errors
+  table: errores_importacion
 load:
   dry_run: false
   load_only: false
@@ -23,9 +23,9 @@ dimensions:
   municipios:
     schema: public
     table: municipios
-    key_column: codigo_ibge
+    key_column: codigo_municipio_ibge
     key_type: integer
-    value_column: nombre
+    value_column: nombre_municipio
     transform: ascii_lower_trim
     lookup_transform: ascii_lower_trim
     create_table: false
@@ -37,22 +37,22 @@ columns:
     type: bigint
     references:
       schema: public
-      table: antenas_flp
+      table: antenas
       column: ecgi
   cluster:
-    target: cluster
+    target: nombre_zona
     required: true
     references:
       schema: public
-      table: clusters
-      column: cluster
+      table: zonas
+      column: nombre_zona
     transform: upper_trim
   municipio:
-    target: municipio_codigo
+    target: codigo_municipio
     required: true
     dimension: municipios
   day_date:
-    target: day_date
+    target: fecha
     required: true
     type: date
     transform: date_ymd
@@ -61,47 +61,47 @@ columns:
     required: true
     transform: upper_trim
   n_usuarios:
-    target: n_usuarios
+    target: cantidad_usuarios
     required: true
     type: integer
     min: 0
   n_sessoes:
-    target: n_sessoes
+    target: cantidad_sesiones
     required: true
     type: integer
     min: 0
   download_bytes:
-    target: download_bytes
+    target: bytes_descarga
     required: true
     type: bigint
     min: 0
   upload_bytes:
-    target: upload_bytes
+    target: bytes_subida
     required: true
     type: bigint
     min: 0
   dur_media_s:
-    target: duracion_media_s
+    target: duracion_promedio_segundos
     required: true
     type: numeric
     min: 0
   drop_pct_medio:
-    target: drop_pct_medio
+    target: porcentaje_caidas_promedio
     required: true
     type: numeric
     min: 0
   congestionamento_medio:
-    target: congestionamiento_medio
+    target: congestion_promedio
     required: true
     type: numeric
     min: 0
   chamadas_total:
-    target: llamadas_total
+    target: total_llamadas
     required: true
     type: integer
     min: 0
   mensagens_total:
-    target: mensajes_total
+    target: total_mensajes
     required: true
     type: integer
     min: 0
