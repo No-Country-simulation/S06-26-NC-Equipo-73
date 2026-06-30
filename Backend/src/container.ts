@@ -6,6 +6,7 @@ import { AIService } from './services/ai.service.js';
 import { DataService } from './services/data.service.js';
 import { HealthService } from './services/health.service.js';
 import { MapService } from './services/map.service.js';
+import { MapRepository } from './repositories/map.repository.js';
 
 export const createContainer = async () => {
     const healthService = new HealthService();
@@ -16,7 +17,8 @@ export const createContainer = async () => {
         timeoutMs: env.AI_TIMEOUT_MS,
     });
     const dataService = new DataService(aiService);
-    const mapService = new MapService();
+    const mapRepository = new MapRepository();
+    const mapService = new MapService(mapRepository);
 
     const healthController = new HealthController(healthService);
     const dataController = new DataController(dataService);

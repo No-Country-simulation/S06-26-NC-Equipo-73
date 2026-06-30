@@ -1,4 +1,5 @@
 import logger from '../config/logger.js';
+import type { MapRepository } from '../repositories/map.repository.js';
 
 export interface MapRegion {
     region: string;
@@ -15,11 +16,20 @@ export interface MapResponse {
 }
 
 export class MapService {
-    getRegions(): MapResponse {
+    constructor(private readonly mapRepository: MapRepository) {}
+
+    async getRegions(): Promise<MapResponse> {
         logger.debug('Map regions requested');
 
         const response: MapResponse = {
-            regions: [],
+            regions: (await this.mapRepository.findRegions()).map((region) => ({
+                region: region.region,
+                lat: region.lat,
+                lng: region.lng,
+                concentration: region.concentration,
+                networkCoverage: region.networkCoverage,
+                indicators: [region.profile],
+            })),
         };
 
         logger.debug(`Map regions retrieved: ${response.regions.length}`);

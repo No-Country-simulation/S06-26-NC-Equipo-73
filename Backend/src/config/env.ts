@@ -25,6 +25,13 @@ const envSchema = z.object({
     AI_MODEL: optionalString,
     AI_BASE_URL: optionalString,
     AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    DATABASE_URL: z
+        .string()
+        .trim()
+        .min(1)
+        .default('postgresql://postgres:postgres@localhost:5432/app-bit'),
+    DATABASE_SSL: booleanFromString.default(false),
+    DATABASE_LOGGING: booleanFromString.default(false),
 });
 
 const parseEnv = () => {
