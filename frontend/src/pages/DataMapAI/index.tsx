@@ -1,6 +1,11 @@
 import { Buttons } from "./components/Buttons";
 import { MapLayout } from "./components/MapLayout";
+import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
+import { Empleo } from "./markersGroups/Empleo";
+import { SaludMental } from "./markersGroups/SaludMental";
+import { Formaciones } from "./markersGroups/Formaciones";
+import { Mentorias } from "./markersGroups/Mentorias";
 import type { Servicio } from "./types";
 import { useState } from "react";
 import { Chat } from "./components/Chat";
@@ -8,15 +13,34 @@ import { MessageCircle } from "lucide-react";
 
 const DataMapAI = () => {
   const [servicios, setServicios] = useState<Servicio[]>([
-    { name: "Empleo", isActive: false },
-    { name: "Salud mental", isActive: false },
-    { name: "Formaciones", isActive: false },
-    { name: "Mentorias", isActive: false },
-    { name: "EXP. estructurantes", isActive: false },
+    { name: "Empleo", isActive: false , disable:false},
+    { name: "Salud mental", isActive: false , disable:false},
+    { name: "Formaciones", isActive: false , disable:false},
+    { name: "Mentorias", isActive: false , disable:false},
+    { name: "EXP. estructurantes", isActive: false , disable:true},
   ]);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  const activeServicio = servicios.find((servicio) => servicio.isActive)
+  const renderMarkers = () => {
+    if (!activeServicio) return null;
+
+    switch (activeServicio.name) {
+      case "Empleo":
+        return <Empleo />;
+      case "Salud mental":
+        return <SaludMental />;
+      case "Formaciones":
+        return <Formaciones />;
+      case "Mentorias":
+        return <Mentorias />;
+      // case "EXP. estructurantes":
+      //   return <ExperienciasEstructurantes />;
+      default:
+        return null;
+    }
+  };
   return (
     <div className="relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
       <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
@@ -37,9 +61,7 @@ const DataMapAI = () => {
 
       <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <MapLayout className="relative  h-[50vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full">
-        <Marker position={[-8.591089048076533, -55.23889767670842]}>
-          <Popup>Brasil</Popup>
-        </Marker>
+        {renderMarkers()}
       </MapLayout>
 
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, ZoomControl } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -28,10 +28,12 @@ export const MapLayout = ({ children, className }: MapLayoutProps) => {
       center={center}
       zoom={zoom}
       scrollWheelZoom={true}
+      zoomControl={false}
     >
       <SetInitialView />
       <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
       {children}
+      <ZoomControl position="bottomright" />
     </MapContainer>
   );
 };
