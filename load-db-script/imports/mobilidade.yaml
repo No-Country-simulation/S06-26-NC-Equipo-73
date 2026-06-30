@@ -1,0 +1,178 @@
+csv:
+  file_path: visent/large/tensor_mobilidade.csv
+  encoding: utf8
+  delimiter: ","
+staging:
+  schema: public
+  table: temporal_movilidad
+  truncate_before_load: true
+  drop_after_load: true
+target:
+  schema: public
+  table: movilidad
+  mode: replace
+errors:
+  schema: public
+  table: errores_importacion
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+  chunk_rows: 100000
+  chunk_retries: 3
+dimensions:
+  municipios:
+    schema: public
+    table: municipios
+    key_column: codigo_municipio_ibge
+    key_type: integer
+    value_column: nombre_municipio
+    transform: ascii_lower_trim
+    lookup_transform: ascii_lower_trim
+    create_table: false
+    create_missing: false
+columns:
+  assinante_hash:
+    target: hash_suscriptor
+    required: true
+    type: bigint
+  day_date:
+    target: fecha
+    required: true
+    type: date
+    transform: date_ymd
+  ecgi:
+    target: ecgi
+    required: true
+    type: bigint
+    references:
+      schema: public
+      table: antenas
+      column: ecgi
+  cluster:
+    target: nombre_zona
+    required: true
+    references:
+      schema: public
+      table: zonas
+      column: nombre_zona
+    transform: upper_trim
+  municipio:
+    target: codigo_municipio
+    required: true
+    dimension: municipios
+  rg_type:
+    target: tipo_rg
+    required: true
+    transform: upper_trim
+  rat_type:
+    target: tipo_rat
+    required: true
+    transform: upper_trim
+  periodo_sessao:
+    target: periodo_sesion
+    required: true
+    transform: upper_trim
+  n_sessoes:
+    target: cantidad_sesiones
+    required: true
+    type: integer
+    min: 0
+  dur_total_s:
+    target: duracion_total_segundos
+    required: true
+    type: integer
+    min: 0
+  download_bytes:
+    target: bytes_descarga
+    required: true
+    type: bigint
+    min: 0
+  upload_bytes:
+    target: bytes_subida
+    required: true
+    type: bigint
+    min: 0
+  drop_pct:
+    target: porcentaje_caidas
+    required: true
+    type: numeric
+    min: 0
+  congestionamento:
+    target: congestion
+    required: true
+    type: numeric
+    min: 0
+  chamadas:
+    target: cantidad_llamadas
+    required: true
+    type: integer
+    min: 0
+  conversacao_seg:
+    target: duracion_conversacion_segundos
+    required: true
+    type: integer
+    min: 0
+  completamento_voz:
+    target: tasa_completado_voz
+    required: true
+    type: numeric
+    min: 0
+  cong_voz:
+    target: congestion_voz
+    required: true
+    type: numeric
+    min: 0
+  mensagens:
+    target: cantidad_mensajes
+    required: true
+    type: integer
+    min: 0
+  completamento_sms:
+    target: tasa_completado_sms
+    required: true
+    type: numeric
+    min: 0
+  cong_sms:
+    target: congestion_sms
+    required: true
+    type: numeric
+    min: 0
+  rg_streaming:
+    target: cantidad_rg_transmision
+    required: true
+    type: integer
+    min: 0
+  rg_game:
+    target: cantidad_rg_juegos
+    required: true
+    type: integer
+    min: 0
+  rg_social:
+    target: cantidad_rg_social
+    required: true
+    type: integer
+    min: 0
+  rg_comunicacao:
+    target: cantidad_rg_comunicacion
+    required: true
+    type: integer
+    min: 0
+  rg_outros:
+    target: cantidad_rg_otros
+    required: true
+    type: integer
+    min: 0
+  income_cluster:
+    target: segmento_ingresos
+    required: true
+    transform: upper_trim
+  age_group:
+    target: grupo_edad
+    required: true
+    transform: trim
+  flag_flagship:
+    target: indicador_dispositivo_insignia
+    required: true
+    type: integer

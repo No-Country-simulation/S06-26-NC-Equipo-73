@@ -1,0 +1,47 @@
+csv:
+  file_path: visent/small/clusters.csv
+  encoding: utf8
+  delimiter: ;
+staging:
+  schema: public
+  table: temporal_zonas
+  truncate_before_load: true
+  drop_after_load: true
+target:
+  schema: public
+  table: zonas
+  mode: replace
+  primary_key: nombre_zona
+errors:
+  schema: public
+  table: errores_importacion
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  Cluster:
+    target: nombre_zona
+    required: true
+    transform: upper_trim
+  MunicipioCodigo:
+    target: codigo_municipio
+    required: true
+    type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_municipio_ibge
+  Lat:
+    target: latitud
+    required: true
+    type: numeric
+  Lon:
+    target: longitud
+    required: true
+    type: numeric
+  Perfil:
+    target: descripcion_perfil
+    required: true
+    transform: trim

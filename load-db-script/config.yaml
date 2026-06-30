@@ -1,0 +1,23 @@
+database:
+  host: 64.176.6.104
+  port: 5433
+  database: app-bit
+  user: postgres
+  password: O2v11KoQqjNppZt8soq5
+default_import: municipios
+imports_dir: imports
+import_order:
+  - municipios
+  - clusters
+  - antenas
+  - assinantes
+  - tensor_concentracao
+  - mobilidade
+  - trajetos_comuns
+  - cursos
+  - ocupaciones_cbo
+  - clases_cnae
+  - subclases_cnae
+  - cagedest_012019
+  - codigos_hospitalares
+  - rd_202402
