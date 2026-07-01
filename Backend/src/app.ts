@@ -9,6 +9,7 @@ import { createContainer } from './container.js';
 import { createRoutes } from './routes/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
 import { server } from './config/mcp.js';
+import './config/db.js';
 
 //Importando para crear las rutas
 
