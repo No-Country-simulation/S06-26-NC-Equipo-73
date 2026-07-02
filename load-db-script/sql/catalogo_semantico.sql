@@ -2,9 +2,9 @@
 -- Es idempotente: puede ejecutarse nuevamente para actualizar las descripciones base.
 --
 -- Flujo recomendado para el MCP:
---   1. SELECT * FROM public.buscar_tablas_datos('pregunta del usuario', 8);
---   2. Construir SQL usando columnas_relevantes, relaciones y advertencias.
---   3. Ejecutar únicamente SELECT parametrizados con un rol de solo lectura.
+--   1. Incluir SELECT * FROM public.listar_fuentes_datos() en el contexto inicial del LLM.
+--   2. El LLM elige tablas y llama describir_tablas_datos(ARRAY['tabla_1', 'tabla_2']).
+--   3. El LLM construye y ejecuta únicamente SELECT parametrizados con un rol de solo lectura.
 
 BEGIN;
 
@@ -230,30 +230,43 @@ ON CONFLICT (esquema, nombre_tabla) DO UPDATE SET
     habilitada_mcp = EXCLUDED.habilitada_mcp,
     actualizado_en = now();
 
-CREATE OR REPLACE FUNCTION public.normalizar_texto_catalogo(valor text)
-RETURNS text
-LANGUAGE sql
-IMMUTABLE
-PARALLEL SAFE
-AS $$
-    SELECT translate(
-        lower(coalesce(valor, '')),
-        'áàäâãéèëêíìïîóòöôõúùüûñç',
-        'aaaaaeeeeiiiiooooouuuunc'
-    );
-$$;
+-- Elimina las funciones de búsqueda lexical de una versión anterior de este archivo.
+DROP FUNCTION IF EXISTS public.buscar_tablas_datos(text, integer);
+DROP FUNCTION IF EXISTS public.normalizar_texto_catalogo(text);
 
-COMMENT ON FUNCTION public.normalizar_texto_catalogo(text) IS
-'Normaliza mayúsculas y diacríticos para búsqueda lexical simple en el catálogo.';
-
-CREATE OR REPLACE FUNCTION public.buscar_tablas_datos(
-    consulta text,
-    limite integer DEFAULT 8
-)
+CREATE OR REPLACE FUNCTION public.listar_fuentes_datos()
 RETURNS TABLE (
     esquema text,
     nombre_tabla text,
+    tipo_tabla text,
     dominio text,
+    descripcion text,
+    granularidad text,
+    fuente text,
+    cobertura text
+)
+LANGUAGE sql
+STABLE
+PARALLEL SAFE
+AS $$
+    SELECT c.esquema, c.nombre_tabla, c.tipo_tabla, c.dominio, c.descripcion,
+           c.granularidad, c.fuente, c.cobertura
+    FROM public.catalogo_tablas_datos c
+    WHERE c.habilitada_mcp
+      AND to_regclass(format('%I.%I', c.esquema, c.nombre_tabla)) IS NOT NULL
+    ORDER BY c.prioridad_busqueda DESC, c.dominio, c.nombre_tabla;
+$$;
+
+COMMENT ON FUNCTION public.listar_fuentes_datos() IS
+'Devuelve el índice compacto de fuentes que debe incluirse en el contexto inicial del LLM.';
+
+CREATE OR REPLACE FUNCTION public.describir_tablas_datos(tablas text[])
+RETURNS TABLE (
+    esquema text,
+    nombre_tabla text,
+    tipo_tabla text,
+    dominio text,
+    subdominios text[],
     descripcion text,
     granularidad text,
     clave_territorial text,
@@ -262,67 +275,40 @@ RETURNS TABLE (
     relaciones jsonb,
     fuente text,
     cobertura text,
-    advertencias text[],
-    coincidencias bigint,
-    terminos_coincidentes text[]
+    advertencias text[]
 )
 LANGUAGE sql
 STABLE
 PARALLEL SAFE
 AS $$
-    WITH tokens AS (
-        SELECT DISTINCT token
-        FROM regexp_split_to_table(public.normalizar_texto_catalogo(consulta), '[^a-z0-9]+') AS token
-        WHERE length(token) >= 3
-          AND token <> ALL (ARRAY[
-              'que','cual','cuales','como','donde','cuando','para','por','con','del','las','los','una','uno',
-              'mayor','menor','cantidad','datos','sobre','entre','esta','este','son','hay','the','and','where','what'
-          ])
-    ), catalogo_normalizado AS (
-        SELECT c.*,
-               public.normalizar_texto_catalogo(
-                   c.nombre_tabla || ' ' || c.dominio || ' ' || c.descripcion || ' ' || c.granularidad || ' ' ||
-                   array_to_string(c.subdominios, ' ') || ' ' || array_to_string(c.conceptos, ' ') || ' ' ||
-                   array_to_string(c.sinonimos, ' ')
-               ) AS texto_busqueda
-        FROM public.catalogo_tablas_datos c
-        WHERE c.habilitada_mcp
-          AND to_regclass(format('%I.%I', c.esquema, c.nombre_tabla)) IS NOT NULL
-    ), puntuado AS (
-        SELECT c.esquema, c.nombre_tabla, c.dominio, c.descripcion, c.granularidad,
-               c.clave_territorial, c.columnas_temporales, c.columnas_relevantes, c.relaciones,
-               c.fuente, c.cobertura, c.advertencias, c.prioridad_busqueda,
-               count(*) FILTER (WHERE c.texto_busqueda LIKE '%' || t.token || '%') AS coincidencias,
-               array_agg(t.token ORDER BY t.token)
-                   FILTER (WHERE c.texto_busqueda LIKE '%' || t.token || '%') AS terminos_coincidentes
-        FROM catalogo_normalizado c
-        CROSS JOIN tokens t
-        GROUP BY c.esquema, c.nombre_tabla, c.dominio, c.descripcion, c.granularidad,
-                 c.clave_territorial, c.columnas_temporales, c.columnas_relevantes, c.relaciones,
-                 c.fuente, c.cobertura, c.advertencias, c.prioridad_busqueda
-    )
-    SELECT p.esquema, p.nombre_tabla, p.dominio, p.descripcion, p.granularidad,
-           p.clave_territorial, p.columnas_temporales, p.columnas_relevantes, p.relaciones,
-           p.fuente, p.cobertura, p.advertencias, p.coincidencias, p.terminos_coincidentes
-    FROM puntuado p
-    WHERE p.coincidencias > 0
-    ORDER BY p.coincidencias DESC, p.prioridad_busqueda DESC, p.nombre_tabla
-    LIMIT greatest(1, least(coalesce(limite, 8), 25));
+    SELECT c.esquema, c.nombre_tabla, c.tipo_tabla, c.dominio, c.subdominios,
+           c.descripcion, c.granularidad, c.clave_territorial, c.columnas_temporales,
+           c.columnas_relevantes, c.relaciones, c.fuente, c.cobertura, c.advertencias
+    FROM public.catalogo_tablas_datos c
+    WHERE c.habilitada_mcp
+      AND (
+          c.nombre_tabla = ANY(coalesce(tablas, ARRAY[]::text[]))
+          OR c.esquema || '.' || c.nombre_tabla = ANY(coalesce(tablas, ARRAY[]::text[]))
+      )
+      AND to_regclass(format('%I.%I', c.esquema, c.nombre_tabla)) IS NOT NULL
+    ORDER BY c.prioridad_busqueda DESC, c.nombre_tabla;
 $$;
 
-COMMENT ON FUNCTION public.buscar_tablas_datos(text, integer) IS
-'Busca tablas por coincidencias parciales con conceptos y sinónimos y devuelve contexto suficiente para construir SQL.';
+COMMENT ON FUNCTION public.describir_tablas_datos(text[]) IS
+'Devuelve columnas, relaciones y advertencias sólo para las tablas elegidas por el LLM.';
 
 COMMIT;
 
--- Ejemplo esperado: devuelve, entre otras, tensor_concentracion y hospitalizaciones_febrero_2024.
--- SELECT nombre_tabla, dominio, coincidencias, terminos_coincidentes
--- FROM public.buscar_tablas_datos(
---   '¿Dónde está la mayor concentración y la mayor cantidad de enfermos por salud mental?',
---   8
+-- Contexto inicial compacto:
+-- SELECT * FROM public.listar_fuentes_datos();
+--
+-- Después de que el LLM elija las fuentes:
+-- SELECT * FROM public.describir_tablas_datos(
+--   ARRAY['tensor_concentracion', 'hospitalizaciones_febrero_2024', 'municipios']
 -- );
 
 -- Seguridad recomendada (ajustar el nombre del rol):
 -- GRANT USAGE ON SCHEMA public TO mcp_lector;
 -- GRANT SELECT ON public.catalogo_tablas_datos TO mcp_lector;
--- GRANT EXECUTE ON FUNCTION public.buscar_tablas_datos(text, integer) TO mcp_lector;
+-- GRANT EXECUTE ON FUNCTION public.listar_fuentes_datos() TO mcp_lector;
+-- GRANT EXECUTE ON FUNCTION public.describir_tablas_datos(text[]) TO mcp_lector;
