@@ -76,7 +76,7 @@ const DataMapAI = () => {
                 <ResetViewOnChange
                 center={center}
                 zoom= {zoom}
-                trigger={setServicios}
+                trigger={servicios.map((s) => s.isActive).join(",")}
                 />
                 {renderMarkers()}
             </MapLayout>
