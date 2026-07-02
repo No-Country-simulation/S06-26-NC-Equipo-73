@@ -1917,6 +1917,32 @@ async function validateTargetForeignKeys(client, target, specs, progress) {
   }
 }
 
+async function ensureTargetIndexes(client, target, progress) {
+  const configuredIndexes = Array.isArray(target.indexes) ? target.indexes : [];
+  const targetSchema = String(target.schema || DEFAULT_SCHEMA);
+  const targetTable = String(target.table);
+  const targetSql = qualifiedTable(targetSchema, targetTable);
+
+  for (const [index, rawColumns] of configuredIndexes.entries()) {
+    const columns = Array.isArray(rawColumns) ? rawColumns.map(String) : [];
+    if (columns.length === 0 || columns.some((column) => !column.trim())) {
+      throw new Error(`target.indexes[${index}] must be a non-empty array of column names.`);
+    }
+
+    const indexName = databaseObjectName("idx", [targetTable, ...columns]);
+    await runLoggedOperation({
+      ...progress,
+      label: `Creating configured index ${index + 1}/${configuredIndexes.length}`,
+      details: { index: indexName, columns },
+      includeIndexProgress: true,
+      operation: () => client.query(
+        `CREATE INDEX IF NOT EXISTS ${quoteIdent(indexName)} ON ${targetSql} ` +
+        `(${columns.map(quoteIdent).join(", ")});`
+      )
+    });
+  }
+}
+
 function dimensionLookupExpr(sourceColumn, rule, dimensions) {
   const dimension = getDimension(dimensions, String(rule.dimension), sourceColumn);
   const valueExpr = dimensionValueExpr("validated", sourceColumn, rule, dimensions);
@@ -2163,6 +2189,7 @@ async function processChunkedImport({
   try {
     const foreignKeys = await ensureTargetForeignKeys(finalClient, shadowTarget, rules, dimensions, progress);
     await validateTargetForeignKeys(finalClient, shadowTarget, foreignKeys, progress);
+    await ensureTargetIndexes(finalClient, shadowTarget, progress);
     await copyTableGrants(finalClient, target, shadowTarget);
     await runLoggedOperation({
       ...progress,
@@ -2394,6 +2421,7 @@ async function processImport(args) {
         });
         logger.info("Valid rows migrated", { migrated });
         await validateTargetForeignKeys(client, target, foreignKeys, progress);
+        await ensureTargetIndexes(client, target, progress);
       }
     } else if (settings.loadOnly) {
       logger.info("Ensuring raw staging table for loadOnly mode");
@@ -2555,6 +2583,7 @@ if (require.main === module) {
 module.exports = {
   buildValidatedCte,
   databaseObjectName,
+  ensureTargetIndexes,
   normalizeAndValidateRecord,
   normalizeDimensions,
   normalizePrimitiveValue,

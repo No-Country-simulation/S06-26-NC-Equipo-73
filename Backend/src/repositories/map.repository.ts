@@ -1,60 +1,52 @@
 import { getDataSource } from '../database/data-source.js';
-import { TensorConcentrationEntity } from '../database/entities/tensor-concentration.entity.js';
 import { ZoneEntity } from '../database/entities/zone.entity.js';
 
-export interface MapRegionRecord {
+export interface MapTerritoryRecord {
+    municipalityCode: number;
     region: string;
     lat: number;
     lng: number;
-    concentration: number;
-    networkCoverage: number;
-    profile: string;
+    profileDescription: string;
 }
 
-interface RawMapRegion {
+interface RawMapTerritory {
+    municipalityCode: string;
     region: string;
     lat: string;
     lng: string;
-    concentration: string;
-    networkCoverage: string;
-    profile: string;
+    profileDescription: string;
 }
 
 export class MapRepository {
-    async findRegions(): Promise<MapRegionRecord[]> {
+    async findTerritories(region?: string): Promise<MapTerritoryRecord[]> {
         const dataSource = await getDataSource();
-
-        const rows = await dataSource
+        const query = dataSource
             .getRepository(ZoneEntity)
             .createQueryBuilder('zone')
-            .leftJoin(
-                TensorConcentrationEntity.options.name,
-                'metric',
-                'metric.nombre_zona = zone.nombre_zona',
-            )
-            .select('zone.nombre_zona', 'region')
-            .addSelect('zone.latitud', 'lat')
-            .addSelect('zone.longitud', 'lng')
-            .addSelect('zone.descripcion_perfil', 'profile')
-            .addSelect('COALESCE(AVG(metric.cantidad_usuarios), 0)', 'concentration')
+            .innerJoin('municipios', 'municipality', 'municipality.codigo_municipio_ibge = zone.codigo_municipio')
+            .select('municipality.codigo_municipio_ibge', 'municipalityCode')
+            .addSelect('municipality.nombre_municipio', 'region')
+            .addSelect('AVG(zone.latitud)', 'lat')
+            .addSelect('AVG(zone.longitud)', 'lng')
             .addSelect(
-                'GREATEST(0, LEAST(100, 100 * (1 - COALESCE(AVG(metric.porcentaje_caidas_promedio), 0))))',
-                'networkCoverage',
+                "STRING_AGG(DISTINCT zone.descripcion_perfil, ' / ' ORDER BY zone.descripcion_perfil)",
+                'profileDescription',
             )
-            .groupBy('zone.nombre_zona')
-            .addGroupBy('zone.latitud')
-            .addGroupBy('zone.longitud')
-            .addGroupBy('zone.descripcion_perfil')
-            .orderBy('zone.nombre_zona', 'ASC')
-            .getRawMany<RawMapRegion>();
+            .groupBy('municipality.codigo_municipio_ibge')
+            .addGroupBy('municipality.nombre_municipio')
+            .orderBy('municipality.nombre_municipio', 'ASC');
 
+        if (region) {
+            query.where('LOWER(municipality.nombre_municipio) = LOWER(:region)', { region });
+        }
+
+        const rows = await query.getRawMany<RawMapTerritory>();
         return rows.map((row) => ({
+            municipalityCode: Number(row.municipalityCode),
             region: row.region,
             lat: Number(row.lat),
             lng: Number(row.lng),
-            concentration: Number(row.concentration),
-            networkCoverage: Number(row.networkCoverage),
-            profile: row.profile,
+            profileDescription: row.profileDescription,
         }));
     }
 }

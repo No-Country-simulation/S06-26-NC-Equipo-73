@@ -6,7 +6,14 @@ export interface TensorConcentration {
     period: string;
     zoneName: string;
     userCount: number;
+    sessionCount: number;
+    downloadBytes: string;
+    uploadBytes: string;
+    averageDurationSeconds: number;
     averageDropPercentage: number;
+    averageCongestion: number;
+    totalCalls: number;
+    totalMessages: number;
 }
 
 export const TensorConcentrationEntity = new EntitySchema<TensorConcentration>({
@@ -36,9 +43,37 @@ export const TensorConcentrationEntity = new EntitySchema<TensorConcentration>({
             name: 'cantidad_usuarios',
             type: Number,
         },
+        sessionCount: {
+            name: 'cantidad_sesiones',
+            type: Number,
+        },
+        downloadBytes: {
+            name: 'bytes_descarga',
+            type: 'bigint',
+        },
+        uploadBytes: {
+            name: 'bytes_subida',
+            type: 'bigint',
+        },
+        averageDurationSeconds: {
+            name: 'duracion_promedio_segundos',
+            type: 'numeric',
+        },
         averageDropPercentage: {
             name: 'porcentaje_caidas_promedio',
             type: 'numeric',
+        },
+        averageCongestion: {
+            name: 'congestion_promedio',
+            type: 'numeric',
+        },
+        totalCalls: {
+            name: 'total_llamadas',
+            type: Number,
+        },
+        totalMessages: {
+            name: 'total_mensajes',
+            type: Number,
         },
     },
 });

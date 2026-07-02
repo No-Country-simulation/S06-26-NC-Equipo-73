@@ -11,6 +11,8 @@ target:
   schema: public
   table: tensor_concentracion
   mode: replace
+  indexes:
+    - [fecha, periodo, nombre_zona]
 errors:
   schema: public
   table: errores_importacion

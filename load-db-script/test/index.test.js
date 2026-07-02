@@ -8,6 +8,7 @@ const YAML = require("yaml");
 const { parse: parseCsv } = require("csv-parse/sync");
 const {
   buildValidatedCte,
+  ensureTargetIndexes,
   normalizeAndValidateRecord,
   normalizeDimensions,
   normalizePrimitiveValue,
@@ -38,6 +39,21 @@ test("projected staging keeps only configured columns", () => {
 
 test("source uses the CSV file name including its extension", () => {
   assert.equal(sourceNameFromCsvPath(path.join("datos", "tensor_mobilidade.csv")), "tensor_mobilidade.csv");
+});
+
+test("configured composite indexes are created with quoted columns", async () => {
+  const queries = [];
+  const client = { query: async (sql) => { queries.push(sql); } };
+  const logger = { info() {}, error() {} };
+
+  await ensureTargetIndexes(client, {
+    schema: "public",
+    table: "metricas",
+    indexes: [["fecha", "periodo", "codigo_municipio"]]
+  }, { logger, intervalMs: 1000 });
+
+  assert.equal(queries.length, 1);
+  assert.match(queries[0], /ON "public"\."metricas" \("fecha", "periodo", "codigo_municipio"\)/);
 });
 
 test("VISENT municipality dimension rejects missing or ambiguous names", () => {

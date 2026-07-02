@@ -76,6 +76,20 @@ target:
 
 Esta verificacion mira solo si la tabla existe. Una tabla vacia tambien sera omitida si `skip_if_exists` esta activo.
 
+Para consultas frecuentes sobre tablas grandes, `target.indexes` permite crear indices compuestos
+despues de terminar la carga y validar las FK:
+
+```yaml
+target:
+  schema: public
+  table: tensor_concentracion
+  mode: replace
+  indexes:
+    - [fecha, periodo, nombre_zona]
+```
+
+En cargas por chunks, estos indices se construyen sobre la tabla sombra antes del intercambio final.
+
 Las reglas `references` descartan las filas cuya referencia no existe y crean claves foraneas en
 la tabla destino. Cuando `references.where` contiene un discriminador fijo, el importador crea una
 columna generada y una FK compuesta. Esto permite, por ejemplo, referenciar
