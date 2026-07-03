@@ -15,7 +15,7 @@ function esQuerySegura(query: string): { valida: boolean; motivo?: string } {
 
     if (!queryLimpia.startsWith('select')) {
         return { valida: false, motivo: 'Solo se permiten consultas SELECT.' };
-    }
+    };
 
     const tienePalabraProhibida = PALABRAS_PROHIBIDAS.some((palabra) =>
         new RegExp(`\\b${palabra}\\b`).test(queryLimpia)
@@ -23,15 +23,15 @@ function esQuerySegura(query: string): { valida: boolean; motivo?: string } {
 
     if (tienePalabraProhibida) {
         return { valida: false, motivo: 'La consulta contiene operaciones no permitidas.' };
-    }
+    };
 
     const cantidadSentencias = queryLimpia.split(';').filter((s) => s.trim().length > 0).length;
     if (cantidadSentencias > 1) {
         return { valida: false, motivo: 'Solo se permite una sentencia SQL por consulta.' };
-    }
+    };
 
     return { valida: true };
-}
+};
 
 function aplicarLimite(query: string): string {
     const queryLimpia = query.trim().replace(/;$/, ''); 
@@ -39,15 +39,15 @@ function aplicarLimite(query: string): string {
 
     if (yaTieneLimit) {
         return queryLimpia;
-    }
+    };
 
     return `${queryLimpia} LIMIT ${LIMITE_MAXIMO_FILAS}`;
-}
+};
 
 server.registerTool(
     'filtrarDatos',
     {
-        description: 'Ejecuta una consulta SQL de tipo SELECT contra la base de datos de App BiT para responder preguntas sobre movilidad, cobertura de red, formación, empleo y salud mental por región. El esquema completo de tablas está disponible en el contexto del sistema. Genera la consulta SQL según esa información y pásala aquí para obtener los datos reales.',
+        description: 'Ejecuta una consulta SQL de tipo SELECT contra la base de datos de App BiT. Úsala SIEMPRE después de contextDB, usando los nombres de tablas y columnas que esa tool te devolvió. No uses tablas o columnas que no hayan sido confirmadas por contextDB.',
         inputSchema: z.object({
             query: z.string().describe('Consulta SQL SELECT a ejecutar, basada en el esquema de tablas provisto en el contexto.')
         })
@@ -61,7 +61,7 @@ server.registerTool(
             return {
                 content: [{ type: 'text', text: `Consulta rechazada: ${validacion.motivo}` }]
             };
-        }
+        };
 
         const queryConLimite = aplicarLimite(query);
 
@@ -74,7 +74,7 @@ server.registerTool(
                 return {
                     content: [{ type: 'text', text: 'La consulta no devolvió resultados.' }]
                 };
-            }
+            };
 
             return {
                 content: [{ type: 'text', text: JSON.stringify(result.rows) }]

@@ -14,9 +14,9 @@ export const DB_SCHEMA_CONTEXT = `
     - latitud (numeric)
     - longitud (numeric)
     - fuente (text)
-
+    
     ---
-
+    
     TABLA: zonas
     Descripción: Catálogo de zonas geográficas con perfil descriptivo.
     - nombre_zona (text)
