@@ -12,7 +12,6 @@ export const createContainer = async () => {
     const aiService = new AIService({
         ...(env.AI_API_KEY && { apiKey: env.AI_API_KEY }),
         ...(env.AI_MODEL && { model: env.AI_MODEL }),
-        ...(env.AI_BASE_URL && { baseUrl: env.AI_BASE_URL }),
         timeoutMs: env.AI_TIMEOUT_MS,
     });
     const dataService = new DataService(aiService);

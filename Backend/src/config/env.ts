@@ -11,7 +11,7 @@ const optionalString = z
     .trim()
     .transform((value) => value || undefined)
     .optional();
-
+ 
 const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     HOST: z.string().default('0.0.0.0'),
@@ -23,8 +23,12 @@ const envSchema = z.object({
     SWAGGER_ENABLED: booleanFromString.default(true),
     AI_API_KEY: optionalString,
     AI_MODEL: optionalString,
-    AI_BASE_URL: optionalString,
     AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    DB_HOST: optionalString,
+    DB_PORT: z.coerce.number().int().positive().default(5433),
+    DB_USER: optionalString,
+    DB_PASSWORD: optionalString,
+    DB_NAME: optionalString,
 });
 
 const parseEnv = () => {
