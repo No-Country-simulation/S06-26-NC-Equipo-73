@@ -11,6 +11,8 @@ target:
   schema: public
   table: movimientos_laborales_201901
   mode: replace
+  indexes:
+    - [periodo_declarado, codigo_municipio]
 errors:
   schema: public
   table: errores_importacion

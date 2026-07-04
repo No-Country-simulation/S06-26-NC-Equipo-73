@@ -11,6 +11,8 @@ target:
   schema: public
   table: hospitalizaciones_febrero_2024
   mode: replace
+  indexes:
+    - [anio_competencia, mes_competencia, codigo_municipio_residencia]
 errors:
   schema: public
   table: errores_importacion
