@@ -104,7 +104,7 @@ export default function BackgroundCanvas() {
       }
     }
 
-    function drawEdges(time: number) {
+    function drawEdges(_time: number) {
       if (!ctx) return;
       for (const [i, j] of edges) {
         const a = nodes[i];
@@ -189,7 +189,7 @@ export default function BackgroundCanvas() {
       drawGrid();
       drawEdges(time);
       drawNodes(time);
-      // drawParticles();
+      drawParticles();
 
       animId = requestAnimationFrame(frame);
     }

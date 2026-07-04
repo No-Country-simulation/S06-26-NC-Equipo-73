@@ -3,7 +3,6 @@ import ProblemSection from "./ProblemSection";
 import IntelligenceSection from "./IntelligenceSection";
 import MotorsSection from "./MotorsSection";
 import HowItWorksSection from "./HowItWorksSection";
-import HeartSystemSection from "./HeartSystemSection";
 import BeforeAfterSection from "./BeforeAfterSection";
 import CTASection from "./CTASection";
 

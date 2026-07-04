@@ -1,5 +1,6 @@
 import { Search, ArrowUp, X, MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useChatQuery } from "../../../features/chat/hooks/useChatQuery";
 
 type ChatProps = {
   isOpen: boolean;
@@ -8,12 +9,23 @@ type ChatProps = {
 
 export const Chat = ({ isOpen, onClose }: ChatProps) => {
   const [value, setValue] = useState("");
+  const { answer, error, isLoading, submitQuery } = useChatQuery();
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.target.style.height = "auto";
     e.target.style.height = `${e.target.scrollHeight}px`;
 
     setValue(e.target.value);
+  };
+
+  const handleSubmit = async () => {
+    const prompt = value.trim();
+
+    if (!prompt || isLoading) {
+      return;
+    }
+
+    await submitQuery({ prompt });
   };
 
   return (
@@ -51,10 +63,48 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
           />
           <button
             type="button"
+            onClick={() => void handleSubmit()}
+            disabled={!value.trim() || isLoading}
             className="absolute right-2 top-2 rounded-full bg-bg-main p-1.5 transition-colors hover:bg-bg-main/80"
           >
             <ArrowUp className="text-text-primary" />
           </button>
+        </div>
+
+        <div className="mt-4 space-y-3 text-sm text-bg-main">
+          {isLoading && <p>Consultando al backend...</p>}
+
+          {error && (
+            <p className="rounded-lg bg-red-500/15 px-3 py-2 text-red-100">
+              {error}
+            </p>
+          )}
+
+          {answer && (
+            <div className="space-y-3 rounded-xl bg-text-primary/40 p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6">
+                {answer.message}
+              </p>
+
+              {answer.dataPoints.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-bg-main/70">
+                    Datos relacionados
+                  </p>
+                  <ul className="space-y-2 text-xs">
+                    {answer.dataPoints.slice(0, 3).map((point) => (
+                      <li
+                        key={`${point.region}-${point.source}`}
+                        className="rounded-lg bg-white/8 px-3 py-2"
+                      >
+                        {point.region}: {point.value} ({point.source})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </aside>
 
@@ -69,4 +119,3 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
     </>
   );
 };
-

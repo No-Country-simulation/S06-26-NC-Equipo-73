@@ -10,6 +10,7 @@ import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
 import { useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
+import { useMapIndicators } from "../../features/map/hooks/useMapIndicators";
 
 const DataMapAI = () => {
     const [servicios, setServicios] = useState<Servicio[]>([
@@ -21,6 +22,11 @@ const DataMapAI = () => {
     ]);
 
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const {
+        data: indicatorCatalog,
+        error: indicatorCatalogError,
+        isLoading: isLoadingIndicatorCatalog,
+    } = useMapIndicators();
     
     const center: LatLngExpression = [-8.591089048076533, -55.23889767670842];
     const zoom:number = 3;
@@ -57,6 +63,11 @@ const DataMapAI = () => {
         <div className="relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
                 <h2 className="text-xl font-bold">Selección de servicio:</h2>
+                <p className="text-sm text-text-primary/70">
+                    {isLoadingIndicatorCatalog && "Cargando catálogo de indicadores..."}
+                    {!isLoadingIndicatorCatalog && !indicatorCatalogError && `Indicadores disponibles: ${indicatorCatalog.length}`}
+                    {indicatorCatalogError && "No se pudo cargar el catálogo del mapa."}
+                </p>
                 <Buttons servicios={servicios} setServicios={setServicios} />
             </div>
 
