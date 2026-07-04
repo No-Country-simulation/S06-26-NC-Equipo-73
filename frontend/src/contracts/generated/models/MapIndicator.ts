@@ -4,17 +4,35 @@
 /* eslint-disable */
 export type MapIndicator = {
     code: string;
-    domain: 'telecommunications' | 'health' | 'employment';
+    domain: MapIndicator.domain;
     label: string;
     description: string;
     value: number | null;
     unit: string;
-    aggregation: 'sum' | 'weighted_average' | 'average' | 'average_by_period' | 'rate';
-    status: 'available' | 'no_data';
+    aggregation: MapIndicator.aggregation;
+    status: MapIndicator.status;
     source: string;
     observation: {
         date: string | null;
         period: string | null;
     };
 };
+export namespace MapIndicator {
+    export enum domain {
+        TELECOMMUNICATIONS = 'telecommunications',
+        HEALTH = 'health',
+        EMPLOYMENT = 'employment',
+    }
+    export enum aggregation {
+        SUM = 'sum',
+        WEIGHTED_AVERAGE = 'weighted_average',
+        AVERAGE = 'average',
+        AVERAGE_BY_PERIOD = 'average_by_period',
+        RATE = 'rate',
+    }
+    export enum status {
+        AVAILABLE = 'available',
+        NO_DATA = 'no_data',
+    }
+}
 

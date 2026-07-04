@@ -12,3 +12,4 @@ export type MapResponse = {
     };
     regions: Array<MapRegion>;
 };
+

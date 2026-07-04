@@ -7,7 +7,7 @@ import './tools/index.js';
 import { env } from './config/env.js';
 import { createContainer } from './container.js';
 import { createRoutes } from './routes/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { server } from './config/mcp.js';
 import './config/db.js';
 
