@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import logo from "../../assets/Logo_Data_Pulse.png";
 
 const navItems = [
@@ -12,12 +13,15 @@ const navItems = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleLinkClick = () => setIsOpen(false);
 
   return (
     <header
@@ -40,6 +44,14 @@ export default function Navbar() {
           />
         </Link>
 
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-center rounded-lg p-2 text-white/80 transition hover:bg-white/10 hover:text-white lg:hidden"
+          aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
+        >
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
         <nav className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <Link
@@ -52,6 +64,23 @@ export default function Navbar() {
           ))}
         </nav>
       </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full border-t border-[rgba(222,229,242,0.12)] bg-[rgba(0,38,84,0.95)] backdrop-blur-md lg:hidden">
+          <div className="mx-auto max-w-7xl space-y-1 px-6 pb-4 pt-2 md:px-10">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                onClick={handleLinkClick}
+                className="block rounded-lg px-4 py-2.5 text-sm font-medium text-white/80 transition duration-200 hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
