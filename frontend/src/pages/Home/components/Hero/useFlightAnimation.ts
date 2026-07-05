@@ -3,13 +3,17 @@ import {
   predefinedRoutes,
   generateBezierPath,
   type FlightRoute,
-} from "./Hero/flightRoutes";
+} from "./flightRoutes";
 
 export type BezierPoints = {
-  x0: number; y0: number;
-  cx1: number; cy1: number;
-  cx2: number; cy2: number;
-  x1: number; y1: number;
+  x0: number;
+  y0: number;
+  cx1: number;
+  cy1: number;
+  cx2: number;
+  cy2: number;
+  x1: number;
+  y1: number;
 };
 
 export type PlaneState = {
@@ -30,25 +34,30 @@ function randomBetween(min: number, max: number) {
 }
 
 function pickRandomRoute(): FlightRoute {
-  return predefinedRoutes[
-    Math.floor(Math.random() * predefinedRoutes.length)
-  ];
+  return predefinedRoutes[Math.floor(Math.random() * predefinedRoutes.length)];
 }
 
 function pathToBezierPoints(path: string): BezierPoints {
-  const parts = path.replace(/[MC]/g, "").trim().split(/,\s*|\s+/);
+  const parts = path
+    .replace(/[MC]/g, "")
+    .trim()
+    .split(/,\s*|\s+/);
   const nums = parts.map(Number);
   return {
-    x0: nums[0], y0: nums[1],
-    cx1: nums[2], cy1: nums[3],
-    cx2: nums[4], cy2: nums[5],
-    x1: nums[6], y1: nums[7],
+    x0: nums[0],
+    y0: nums[1],
+    cx1: nums[2],
+    cy1: nums[3],
+    cx2: nums[4],
+    cy2: nums[5],
+    x1: nums[6],
+    y1: nums[7],
   };
 }
 
 function getPointOnCubicBezier(
   bp: BezierPoints,
-  t: number
+  t: number,
 ): { x: number; y: number } {
   const { x0, y0, cx1, cy1, cx2, cy2, x1, y1 } = bp;
   const mt = 1 - t;
@@ -67,7 +76,7 @@ function getPointOnCubicBezier(
 
 function getTangentOnCubicBezier(
   bp: BezierPoints,
-  t: number
+  t: number,
 ): { angle: number } {
   const { x0, y0, cx1, cy1, cx2, cy2, x1, y1 } = bp;
   const mt = 1 - t;
@@ -90,7 +99,7 @@ export function useFlightAnimation(numPlanes: number = 4) {
       const path = generateBezierPath(
         route.from,
         route.to,
-        randomBetween(0.12, 0.28)
+        randomBetween(0.12, 0.28),
       );
       return {
         id: i,
@@ -118,7 +127,7 @@ export function useFlightAnimation(numPlanes: number = 4) {
             const newPath = generateBezierPath(
               newRoute.from,
               newRoute.to,
-              randomBetween(0.12, 0.28)
+              randomBetween(0.12, 0.28),
             );
             return {
               ...plane,
@@ -150,7 +159,7 @@ export function useFlightAnimation(numPlanes: number = 4) {
         }
 
         return { ...plane, progress, now };
-      })
+      }),
     );
   }, []);
 
