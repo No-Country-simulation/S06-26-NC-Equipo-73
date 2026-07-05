@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Section from "../../components/ui/Section";
+import Section from "../../../components/ui/Section";
 
 export default function HeartSystemSection() {
   return (
@@ -10,8 +10,8 @@ export default function HeartSystemSection() {
     >
       <div className="relative mx-auto flex aspect-[16/10] max-w-4xl items-center justify-center overflow-hidden rounded-sm"
         style={{
-          backgroundColor: "rgba(254, 248, 212, 0.04)",
-          border: "1px solid rgba(237, 223, 189, 0.2)",
+          backgroundColor: "rgba(90, 126, 190, 0.04)",
+          border: "1px solid rgba(90, 126, 190, 0.2)",
         }}
       >
         <svg viewBox="0 0 800 500" className="h-full w-full" fill="none">
@@ -20,7 +20,7 @@ export default function HeartSystemSection() {
             stroke="var(--primary-accent)"
             strokeWidth="0.8"
             strokeDasharray="3 5"
-            fill="rgba(125, 106, 198, 0.05)"
+            fill="rgba(34, 64, 111, 0.05)"
             initial={{ pathLength: 0 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true }}
@@ -41,7 +41,7 @@ export default function HeartSystemSection() {
                 r={ant.r}
                 stroke="var(--primary-accent)"
                 strokeWidth="0.8"
-                fill="rgba(125, 106, 198, 0.08)"
+                fill="rgba(34, 64, 111, 0.08)"
                 initial={{ scale: 0 }}
                 whileInView={{ scale: 1 }}
                 viewport={{ once: true }}
@@ -71,7 +71,7 @@ export default function HeartSystemSection() {
                   cx={ant.cx}
                   cy={ant.cy}
                   r={ant.r + k * 12}
-                  stroke="var(--border-subtle)"
+                  stroke="var(--color-secondary)"
                   strokeWidth="0.4"
                   fill="none"
                   opacity="0.15"
@@ -136,7 +136,7 @@ export default function HeartSystemSection() {
             transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
           />
 
-          <text x="400" y="460" textAnchor="middle" fill="var(--border-subtle)" fontSize="10" letterSpacing="3" opacity="0.4">
+          <text x="400" y="460" textAnchor="middle" fill="var(--color-secondary)" fontSize="10" letterSpacing="3" opacity="0.4">
             VÍSENT CDRVIEW · RED DE INFRAESTRUCTURA DIGITAL
           </text>
         </svg>
@@ -163,7 +163,7 @@ export default function HeartSystemSection() {
             </span>
             <p
               className="mt-1 text-xs"
-              style={{ color: "var(--border-subtle)" }}
+              style={{ color: "var(--color-secondary)" }}
             >
               {stat.label}
             </p>

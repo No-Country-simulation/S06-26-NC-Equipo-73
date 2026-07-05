@@ -4,24 +4,42 @@
   --font-body: "Roboto", sans-serif;
 
   /* Fondos y texto */
-  --bg-main: #f2e3c0;
-  --bg-surface: #fcf5c9;
-  --border-subtle: #eddfbd;
-  --text-primary: #402c2c;
-  --text-primary-light: #756358;
-  --text-secondary: #6d6d6d;
+  --bg-main: #22406f;
+  --bg-surface: #dee5f2;
+  --border-subtle: #5a7ebe;
+  --text-primary: #ffffff;
+  --text-secondary: #22406f;
+  --text-tertiary: #8ba3c7;
 
-  /* Identidad (nombres actuales) */
-  --color-primary: #630e06;
-  --color-secondary: #e6af00;
-  --color-container: #d7f7e1;
+  /* Identidad */
+  --color-primary: #22406f;
+  --color-secondary: #5a7ebe;
+  --color-container: #dee5f2;
+
+  /* Gradient French-blue intenso → azul medio → French-blue */
+  --gradient-dark: linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(0, 38, 84, 0.6);
+  --glass-blur: 12px;
+
+  /* Variables para secciones Dark */
+  --dark-text-body: rgba(255, 255, 255, 0.8);
+  --dark-text-muted: rgba(255, 255, 255, 0.6);
+  --dark-card-bg: rgba(255, 255, 255, 0.06);
+  --dark-card-border: rgba(255, 255, 255, 0.1);
+
+  /* Variables para secciones Light */
+  --light-text-body: #22406f;
+  --light-text-muted: #5a7ebe;
+  --light-card-bg: #ffffff;
 
   /* Escala territorial (frío → caliente) */
   --heatmap-cold: var(--color-container);
   --heatmap-mid: var(--color-secondary);
   --heatmap-hot: var(--color-primary);
 
-  /* Alias legacy — usados en componentes existentes */
+  /* Alias legacy */
   --primary-accent: var(--color-primary);
   --secondary-accent: var(--color-secondary);
 }

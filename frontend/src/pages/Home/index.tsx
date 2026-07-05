@@ -1,11 +1,11 @@
-import HeroSection from "./HeroSection";
-import ProblemSection from "./ProblemSection";
-import IntelligenceSection from "./IntelligenceSection";
-import MotorsSection from "./MotorsSection";
-import HowItWorksSection from "./HowItWorksSection";
-import HeartSystemSection from "./HeartSystemSection";
-import BeforeAfterSection from "./BeforeAfterSection";
-import CTASection from "./CTASection";
+import HeroSection from "./components/Hero/HeroSection";
+import ProblemSection from "./components/ProblemSection";
+import IntelligenceSection from "./components/IntelligenceSection";
+import MotorsSection from "./components/MotorsSection";
+import HowItWorksSection from "./components/HowItWorksSection";
+// import HeartSystemSection from "./components/HeartSystemSection";
+import BeforeAfterSection from "./components/BeforeAfterSection";
+import CTASection from "./components/CTASection";
 
 export default function Home() {
   return (
