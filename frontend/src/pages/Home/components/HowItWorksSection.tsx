@@ -2,11 +2,31 @@ import { motion } from "framer-motion";
 import Section from "../../../components/ui/Section";
 
 const steps = [
-  { num: "01", title: "Seleccionar región", desc: "Elegí el territorio que querés analizar en el mapa interactivo." },
-  { num: "02", title: "Visualizar indicadores", desc: "Accedé a métricas integradas de conectividad, empleo y más." },
-  { num: "03", title: "Realizar consulta", desc: "Usá lenguaje natural para explorar relaciones entre variables." },
-  { num: "04", title: "Obtener análisis", desc: "Recibí un informe contextualizado con patrones y alertas." },
-  { num: "05", title: "Generar decisiones", desc: "Traducí los hallazgos en políticas públicas basadas en evidencia." },
+  {
+    num: "01",
+    title: "Seleccionar región",
+    desc: "Elegí el territorio que querés analizar en el mapa interactivo.",
+  },
+  {
+    num: "02",
+    title: "Visualizar indicadores",
+    desc: "Accedé a métricas integradas de conectividad, empleo y más.",
+  },
+  {
+    num: "03",
+    title: "Realizar consulta",
+    desc: "Usá lenguaje natural para explorar relaciones entre variables.",
+  },
+  {
+    num: "04",
+    title: "Obtener análisis",
+    desc: "Recibí un informe contextualizado con patrones y alertas.",
+  },
+  {
+    num: "05",
+    title: "Generar decisiones",
+    desc: "Traducí los hallazgos en políticas públicas basadas en evidencia.",
+  },
 ];
 
 const container = {
@@ -16,7 +36,11 @@ const container = {
 
 const itemAnim = {
   hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const },
+  },
 };
 
 export default function HowItWorksSection() {
@@ -25,7 +49,11 @@ export default function HowItWorksSection() {
       id="como-funciona"
       title="Cómo Funciona"
       subtitle="Del dato a la decisión en cinco movimientos."
-      style={{ backgroundColor: "var(--bg-surface)", color: "var(--light-text-body)" }}
+      style={{
+        backgroundColor: "var(--bg-surface)",
+        color: "var(--light-text-body)",
+      }}
+      
     >
       <motion.div
         variants={container}

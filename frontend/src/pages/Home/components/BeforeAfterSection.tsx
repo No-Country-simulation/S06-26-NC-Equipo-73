@@ -24,6 +24,7 @@ export default function BeforeAfterSection() {
         background:
           "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",
       }}
+      dark
     >
       <div className="grid gap-8 md:grid-cols-2">
         <motion.div
@@ -52,9 +53,7 @@ export default function BeforeAfterSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
               >
-                <span className="mt-0.5 shrink-0 text-white/50">
-                  ✕
-                </span>
+                <span className="mt-0.5 shrink-0 text-white/50">✕</span>
                 {b}
               </motion.li>
             ))}
@@ -74,9 +73,7 @@ export default function BeforeAfterSection() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <div className="mb-6 flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-white">
-              Con Data Pulse
-            </h3>
+            <h3 className="text-lg font-semibold text-white">Con Data Pulse</h3>
           </div>
           <ul className="space-y-4">
             {after.map((a, i) => (
@@ -88,9 +85,7 @@ export default function BeforeAfterSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
               >
-                <span className="mt-0.5 shrink-0 text-white/70">
-                  ✓
-                </span>
+                <span className="mt-0.5 shrink-0 text-white/70">✓</span>
                 {a}
               </motion.li>
             ))}

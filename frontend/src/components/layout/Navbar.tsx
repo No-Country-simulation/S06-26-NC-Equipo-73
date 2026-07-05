@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import logo from "../../assets/Logo_Data_Pulse.png";
 
 const navItems = [
   { label: "Nosotros", to: "/#nosotros" },
@@ -22,9 +23,7 @@ export default function Navbar() {
     <header
       className="sticky top-0 z-50 border-b border-[rgba(222,229,242,0.12)] transition-all duration-300"
       style={{
-        background: scrolled
-          ? "rgba(0, 38, 84, 0.85)"
-          : "rgba(0, 38, 84, 0.5)",
+        background: scrolled ? "rgba(0, 38, 84, 0.85)" : "rgba(0, 38, 84, 0.5)",
         backdropFilter: "blur(var(--glass-blur))",
         WebkitBackdropFilter: "blur(var(--glass-blur))",
       }}
@@ -35,9 +34,9 @@ export default function Navbar() {
           className="flex shrink-0 items-center transition-all duration-200 hover:opacity-90"
         >
           <img
-            src="./assets/Logo_Data_Pulse.png"
+            src={logo}
             alt="Logo"
-            className="h-10 w-auto object-contain md:h-12"
+            className="object-contain h-10 w-auto md:h-14"
           />
         </Link>
 

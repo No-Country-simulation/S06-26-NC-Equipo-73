@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useFlightAnimation, type PlaneState } from "../useFlightAnimation";
+import { useFlightAnimation, type PlaneState } from "./useFlightAnimation";
 
 function AirplaneShape() {
   return (

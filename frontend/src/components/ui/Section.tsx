@@ -38,6 +38,9 @@ export default function Section({
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
             className="text-3xl font-bold tracking-tight md:text-4xl"
+            style={{
+              color: dark ? "var(--text-primary)" : "var(--text-secondary)",
+            }}
           >
             {title}
           </motion.h2>
@@ -50,9 +53,7 @@ export default function Section({
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mt-4 max-w-2xl text-lg leading-relaxed"
             style={{
-              color: dark
-                ? "var(--light-text-muted)"
-                : "var(--dark-text-body)",
+              color: dark ? "var(--text-primary)" : "var(--text-secondary)",
             }}
           >
             {subtitle}

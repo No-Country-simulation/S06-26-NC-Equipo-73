@@ -4,10 +4,19 @@ import Section from "../../../components/ui/Section";
 const nodes = [
   {
     label: "Conectividad",
-    description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
+    description:
+      "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
     gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
-      <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        viewBox="0 0 48 48"
+        className="h-16 w-16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="24" cy="16" r="4" strokeWidth="1.5" />
         <circle cx="12" cy="38" r="4" strokeWidth="1.5" />
         <circle cx="36" cy="38" r="4" strokeWidth="1.5" />
@@ -19,10 +28,19 @@ const nodes = [
   },
   {
     label: "Movilidad",
-    description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
+    description:
+      "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
     gradient: "from-[#5a7ebe] to-[#22406F]",
     icon: (
-      <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        viewBox="0 0 48 48"
+        className="h-16 w-16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
         <circle cx="36" cy="12" r="3" strokeWidth="1.5" />
         <circle cx="12" cy="36" r="3" strokeWidth="1.5" />
@@ -36,10 +54,19 @@ const nodes = [
   },
   {
     label: "Empleo",
-    description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
+    description:
+      "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
     gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
-      <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        viewBox="0 0 48 48"
+        className="h-16 w-16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="8" y="20" width="32" height="18" rx="2" strokeWidth="1.5" />
         <path d="M16 20V14a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v6" strokeWidth="1.5" />
         <line x1="24" y1="28" x2="24" y2="34" strokeWidth="1.5" />
@@ -49,10 +76,19 @@ const nodes = [
   },
   {
     label: "Formación",
-    description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
+    description:
+      "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
     gradient: "from-[#5a7ebe] to-[#22406F]",
     icon: (
-      <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        viewBox="0 0 48 48"
+        className="h-16 w-16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M24 8L4 18l20 10 20-10L24 8z" strokeWidth="1.5" />
         <path d="M4 27v7l20 10 20-10v-7" strokeWidth="1.5" />
         <path d="M4 18v7l20 10 20-10v-7" strokeWidth="1.5" />
@@ -61,11 +97,23 @@ const nodes = [
   },
   {
     label: "Salud Mental",
-    description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
+    description:
+      "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
     gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
-      <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M24 6C14.06 6 6 14.06 6 24s8.06 18 18 18 18-8.06 18-18S33.94 6 24 6z" strokeWidth="1.5" />
+      <svg
+        viewBox="0 0 48 48"
+        className="h-16 w-16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path
+          d="M24 6C14.06 6 6 14.06 6 24s8.06 18 18 18 18-8.06 18-18S33.94 6 24 6z"
+          strokeWidth="1.5"
+        />
         <path d="M16 24h2l3-5 3 10 3-10 3 5h2" strokeWidth="1.5" />
       </svg>
     ),
@@ -81,7 +129,11 @@ const container = {
 
 const itemAnim = {
   hidden: { opacity: 0, y: 32 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const },
+  },
 };
 
 export default function IntelligenceSection() {
@@ -93,6 +145,7 @@ export default function IntelligenceSection() {
         background:
           "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",
       }}
+      dark
     >
       <motion.div
         variants={container}
@@ -118,9 +171,7 @@ export default function IntelligenceSection() {
               {n.icon}
             </div>
             <div className="flex flex-1 flex-col gap-2 p-5">
-              <h3 className="text-base font-semibold text-white">
-                {n.label}
-              </h3>
+              <h3 className="text-base font-semibold text-white">{n.label}</h3>
               <p className="text-sm leading-relaxed text-white/75">
                 {n.description}
               </p>
