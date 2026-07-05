@@ -16,23 +16,17 @@
   --color-secondary: #5a7ebe;
   --color-container: #dee5f2;
 
-  /* Gradient French-blue intenso → azul medio → French-blue */
-  --gradient-dark: linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%);
+  /* Gradients */
+  --gradient-dark: linear-gradient(
+    90deg,
+    #002654 0%,
+    #1a4a7a 50%,
+    #002654 100%
+  );
 
   /* Glassmorphism */
   --glass-bg: rgba(0, 38, 84, 0.6);
   --glass-blur: 12px;
-
-  /* Variables para secciones Dark */
-  --dark-text-body: rgba(255, 255, 255, 0.8);
-  --dark-text-muted: rgba(255, 255, 255, 0.6);
-  --dark-card-bg: rgba(255, 255, 255, 0.06);
-  --dark-card-border: rgba(255, 255, 255, 0.1);
-
-  /* Variables para secciones Light */
-  --light-text-body: #22406f;
-  --light-text-muted: #5a7ebe;
-  --light-card-bg: #ffffff;
 
   /* Escala territorial (frío → caliente) */
   --heatmap-cold: var(--color-container);
@@ -46,21 +40,21 @@
 
 @theme inline {
   --color-bg-main: var(--bg-main);
-  
+
   --color-bg-surface: var(--bg-surface);
   --color-border-subtle: var(--border-subtle);
-  
+
   --color-text-primary: var(--text-primary);
   --color-text-primary-light: var(--text-primary-light);
   --color-text-secondary: var(--text-secondary);
-  
+
   --color-primary: var(--color-primary);
   --color-secondary: var(--color-secondary);
   --color-container: var(--color-container);
-  
+
   --color-primary-accent: var(--primary-accent);
   --color-secondary-accent: var(--secondary-accent);
-  
+
   --color-heatmap-cold: var(--heatmap-cold);
   --color-heatmap-mid: var(--heatmap-mid);
   --color-heatmap-hot: var(--heatmap-hot);

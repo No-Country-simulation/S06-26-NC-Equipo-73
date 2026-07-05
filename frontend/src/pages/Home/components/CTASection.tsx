@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import Button from "../../../components/ui/Button";
+import { Search } from "lucide-react";
 
 export default function CTASection() {
   return (
@@ -19,7 +20,7 @@ export default function CTASection() {
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
         <motion.h2
           className="text-3xl font-bold leading-tight md:text-4xl lg:text-5xl"
-          style={{ color: "var(--color-primary)" }}
+          style={{ color: "var(--text-secondary)" }}
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -30,7 +31,7 @@ export default function CTASection() {
 
         <motion.p
           className="mt-6 max-w-xl text-base leading-relaxed md:text-lg"
-          style={{ color: "var(--light-text-body)" }}
+          style={{ color: "var(--text-secondary)" }}
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -48,7 +49,10 @@ export default function CTASection() {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <Button variant="bigGhost" theme="light">
-            ASISTENTE IA
+            <>
+              <Search className="w-4 h-4" />
+              ASISTENTE IA
+            </>
           </Button>
           <Button variant="bigPrimary" theme="light">
             MAPA INTERACTIVO
