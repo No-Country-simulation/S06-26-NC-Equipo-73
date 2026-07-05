@@ -8,13 +8,15 @@ interface ButtonProps extends HTMLMotionProps<"button"> {
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-sm px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer select-none";
+  "inline-flex items-center justify-center gap-2 rounded-sm text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer select-none";
 
 const sizes = {
-  primary: "border px-20 py-4",
-  ghost: "border border-b-5 border-r-5 px-20 py-4",
-  bigPrimary: "border px-20 py-4",
-  bigGhost: "border border-b-5 border-r-5 px-20 py-4",
+  primary: "border px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-3",
+  ghost:
+    "border border-b-5 border-r-5 px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-3",
+  bigPrimary: "border px-6 py-3 sm:px-10 sm:py-4 md:px-20 md:py-4",
+  bigGhost:
+    "border border-b-5 border-r-5 px-6 py-3 sm:px-10 sm:py-4 md:px-20 md:py-4",
 };
 
 export default function Button({
@@ -42,7 +44,7 @@ export default function Button({
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`${base} ${sizes[variant]} ${className}`}
+      className={`${base} ${sizes[variant] ?? sizes.primary} ${className}`}
       style={theme === "dark" ? darkStyles : lightStyles}
       {...props}
     >

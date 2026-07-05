@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import Button from "../../../../components/ui/Button";
+import { Search } from "lucide-react";
 import HeroMap from "./HeroMap";
 
 const GRADIENT =
@@ -35,7 +36,10 @@ export default function HeroSection() {
 
             <div className="mt-8 flex gap-4">
               <Button variant="bigGhost" theme="dark">
-                ASISTENTE IA
+                <>
+                  <Search className="w-4 h-4" />
+                  ASISTENTE IA
+                </>
               </Button>
               <Button variant="bigPrimary" theme="dark">
                 MAPA INTERACTIVO
@@ -93,10 +97,13 @@ export default function HeroSection() {
             </p>
 
             <div className="mt-12 flex flex-wrap justify-center gap-4">
-              <Button variant="primary" theme="dark">
-                ASISTENTE IA
-              </Button>
               <Button variant="ghost" theme="dark">
+                <>
+                  <Search className="w-4 h-4" />
+                  ASISTENTE IA
+                </>
+              </Button>
+              <Button variant="primary" theme="dark">
                 MAPA INTERACTIVO
               </Button>
             </div>

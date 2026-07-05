@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import Button from "../../../components/ui/Button";
+import { Search } from "lucide-react";
 
 export default function CTASection() {
   return (
@@ -48,7 +49,10 @@ export default function CTASection() {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <Button variant="bigGhost" theme="light">
-            ASISTENTE IA
+            <>
+              <Search className="w-4 h-4" />
+              ASISTENTE IA
+            </>
           </Button>
           <Button variant="bigPrimary" theme="light">
             MAPA INTERACTIVO
