@@ -20,13 +20,17 @@ export default function BeforeAfterSection() {
     <Section
       title="Antes de Actuar"
       subtitle="Compará el enfoque tradicional con lo que App BiT pone en tus manos."
+      style={{
+        background:
+          "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",
+      }}
     >
       <div className="grid gap-8 md:grid-cols-2">
         <motion.div
-          className="rounded-sm p-8"
+          className="rounded-2xl p-8"
           style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border-subtle)",
+            backgroundColor: "var(--dark-card-bg)",
+            border: "1px solid var(--dark-card-border)",
           }}
           initial={{ opacity: 0, x: -40 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -34,12 +38,7 @@ export default function BeforeAfterSection() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-              style={{ backgroundColor: "var(--heatmap-hot)", color: "var(--bg-main)" }}
-            >
-              T
-            </div>
-            <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+            <h3 className="text-lg font-semibold text-white">
               Enfoque Tradicional
             </h3>
           </div>
@@ -47,14 +46,15 @@ export default function BeforeAfterSection() {
             {before.map((b, i) => (
               <motion.li
                 key={i}
-                className="flex items-start gap-3 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
+                className="flex items-start gap-3 text-sm leading-relaxed text-white/75"
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
               >
-                <span className="mt-0.5 shrink-0" style={{ color: "var(--heatmap-hot)" }}>✕</span>
+                <span className="mt-0.5 shrink-0 text-white/50">
+                  ✕
+                </span>
                 {b}
               </motion.li>
             ))}
@@ -62,11 +62,11 @@ export default function BeforeAfterSection() {
         </motion.div>
 
         <motion.div
-          className="rounded-sm p-8"
+          className="rounded-2xl p-8"
           style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--primary-accent)",
-            boxShadow: "0 0 0 1px var(--primary-accent)",
+            backgroundColor: "var(--dark-card-bg)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.15)",
           }}
           initial={{ opacity: 0, x: 40 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -74,29 +74,23 @@ export default function BeforeAfterSection() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-              style={{ backgroundColor: "var(--primary-accent)", color: "var(--bg-main)" }}
-            >
-              B
-            </div>
-            <h3 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-              Con App BiT
+            <h3 className="text-lg font-semibold text-white">
+              Con Data Pulse
             </h3>
           </div>
           <ul className="space-y-4">
             {after.map((a, i) => (
               <motion.li
                 key={i}
-                className="flex items-start gap-3 text-sm leading-relaxed"
-                style={{ color: "var(--text-primary)" }}
+                className="flex items-start gap-3 text-sm leading-relaxed text-white/75"
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
               >
-                <span className="mt-0.5 shrink-0"
-                  style={{ color: "var(--primary-accent)" }}
-                >✓</span>
+                <span className="mt-0.5 shrink-0 text-white/70">
+                  ✓
+                </span>
                 {a}
               </motion.li>
             ))}

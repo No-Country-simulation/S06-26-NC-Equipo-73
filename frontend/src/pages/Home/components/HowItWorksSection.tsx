@@ -25,6 +25,7 @@ export default function HowItWorksSection() {
       id="como-funciona"
       title="Cómo Funciona"
       subtitle="Del dato a la decisión en cinco movimientos."
+      style={{ backgroundColor: "var(--bg-surface)", color: "var(--light-text-body)" }}
     >
       <motion.div
         variants={container}
@@ -43,7 +44,7 @@ export default function HowItWorksSection() {
               className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm text-lg font-bold"
               style={{
                 backgroundColor: "var(--primary-accent)",
-                color: "var(--bg-main)",
+                color: "var(--text-primary)",
               }}
             >
               {s.num}
@@ -51,7 +52,7 @@ export default function HowItWorksSection() {
             <div className="flex flex-col gap-2 pt-2 lg:pt-0">
               <h3
                 className="text-lg font-semibold"
-                style={{ color: "var(--text-primary)" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 {s.title}
               </h3>
@@ -68,7 +69,7 @@ export default function HowItWorksSection() {
 
       <motion.div
         className="mt-16 flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-widest"
-        style={{ color: "var(--primary-accent)" }}
+        style={{ color: "var(--color-secondary)" }}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}

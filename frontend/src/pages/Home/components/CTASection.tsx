@@ -4,54 +4,22 @@ import Button from "../../../components/ui/Button";
 export default function CTASection() {
   return (
     <section
-      className="relative overflow-hidden px-6 py-32 text-center md:px-16 lg:px-24"
-      style={{ backgroundColor: "var(--text-primary)" }}
+      className="relative overflow-hidden px-6 py-32 md:px-16 lg:px-24"
+      style={{ backgroundColor: "#dee5f2" }}
     >
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 1 }}
-      >
-        <svg className="h-full w-full" fill="none">
-          <motion.circle
-            cx="20%"
-            cy="30%"
-            r={120}
-            stroke="rgba(211, 199, 233, 0.07)"
-            strokeWidth="0.5"
-            fill="none"
-            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.1, 0.3] }}
-            transition={{ duration: 6, repeat: Infinity }}
-          />
-          <motion.circle
-            cx="80%"
-            cy="60%"
-            r={180}
-            stroke="rgba(211, 199, 233, 0.06)"
-            strokeWidth="0.5"
-            fill="none"
-            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.05, 0.2] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.circle
-            cx="50%"
-            cy="50%"
-            r={80}
-            stroke="rgba(211, 199, 233, 0.08)"
-            strokeWidth="0.4"
-            fill="none"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.08, 0.3] }}
-            transition={{ duration: 5, repeat: Infinity }}
-          />
-        </svg>
-      </motion.div>
+      {/* Blue light effect at the end (right side) */}
+      <div
+        className="pointer-events-none absolute -right-0 top-1/2 -translate-y-1/4 h-[500px] w-[500px] rounded-full blur-[30px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(90,126,190,0.6) 0%, rgba(34,64,111,0.3) 40%, transparent 70%)",
+        }}
+      />
 
-      <div className="relative z-10 mx-auto max-w-3xl">
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
         <motion.h2
           className="text-3xl font-bold leading-tight md:text-4xl lg:text-5xl"
-          style={{ color: "var(--bg-main)" }}
+          style={{ color: "var(--color-primary)" }}
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -61,25 +29,30 @@ export default function CTASection() {
         </motion.h2>
 
         <motion.p
-          className="mx-auto mt-6 max-w-xl text-base leading-relaxed md:text-lg"
-          style={{ color: "var(--bg-main)" }}
+          className="mt-6 max-w-xl text-base leading-relaxed md:text-lg"
+          style={{ color: "var(--light-text-body)" }}
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.15 }}
         >
-          Se trata de identificar oportunidades donde otros solo ven estadísticas.
+          Se trata de identificar oportunidades donde otros solo ven
+          estadísticas.
         </motion.p>
 
         <motion.div
-          className="mt-12 flex flex-wrap justify-center gap-4"
+          className="mt-12 flex flex-wrap gap-4"
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <Button variant="primary">Comenzar Exploración</Button>
-          <Button variant="ghost">Acceder al Mapa</Button>
+          <Button variant="bigGhost" theme="light">
+            ASISTENTE IA
+          </Button>
+          <Button variant="bigPrimary" theme="light">
+            MAPA INTERACTIVO
+          </Button>
         </motion.div>
       </div>
     </section>

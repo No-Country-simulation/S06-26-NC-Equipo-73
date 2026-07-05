@@ -57,7 +57,7 @@ export default function ProblemSection() {
     <Section
       id="nosotros"
       title="Los datos existen. La visión integrada no."
-      dark
+      style={{ backgroundColor: "var(--bg-surface)", color: "var(--light-text-body)" }}
     >
       <motion.div
         variants={container}
@@ -72,8 +72,8 @@ export default function ProblemSection() {
             variants={item}
             className="group flex gap-5 rounded-sm p-6 transition-all duration-500"
             style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
+              backgroundColor: "#22406f",
+              border: "1px solid #5a7ebe",
             }}
             whileHover={{
               y: -2,
@@ -81,21 +81,18 @@ export default function ProblemSection() {
             }}
           >
             <div
-              className="flex shrink-0 items-start rounded-sm p-2"
-              style={{ color: "var(--primary-accent)" }}
+              className="flex shrink-0 items-start rounded-sm p-2 text-white"
             >
               {p.icon}
             </div>
             <div className="flex flex-col gap-2">
               <h3
-                className="text-lg font-semibold"
-                style={{ color: "var(--text-primary)" }}
+                className="text-lg font-semibold text-white"
               >
                 {p.title}
               </h3>
               <p
-                className="text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
+                className="text-sm leading-relaxed text-white/80"
               >
                 {p.desc}
               </p>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const navItems = [
@@ -9,48 +10,48 @@ const navItems = [
 ];
 
 export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-[rgba(99,14,6,0.08)] bg-[rgba(255,245,201,0.95)] backdrop-blur-xl shadow-sm shadow-[rgba(99,14,6,0.08)]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 md:px-10">
+    <header
+      className="sticky top-0 z-50 border-b border-[rgba(222,229,242,0.12)] transition-all duration-300"
+      style={{
+        background: scrolled
+          ? "rgba(0, 38, 84, 0.85)"
+          : "rgba(0, 38, 84, 0.5)",
+        backdropFilter: "blur(var(--glass-blur))",
+        WebkitBackdropFilter: "blur(var(--glass-blur))",
+      }}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-3 md:px-10">
         <Link
           to="/"
-          className="flex items-center gap-3 transition-all duration-200 hover:opacity-90"
+          className="flex shrink-0 items-center transition-all duration-200 hover:opacity-90"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-[#630e06] via-[#e6af00] to-[#d7f7e1] text-white shadow-lg shadow-[#630e0680]">
-            <span className="text-lg font-black">B</span>
-          </div>
-          <div className="leading-none">
-            <p
-              className="text-sm font-semibold uppercase tracking-[0.2em]"
-              style={{ color: "var(--text-primary)" }}
-            >
-              BiT
-            </p>
-            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              Inteligencia Territorial
-            </p>
-          </div>
+          <img
+            src="./assets/Logo_Data_Pulse.png"
+            alt="Logo"
+            className="h-10 w-auto object-contain md:h-12"
+          />
         </Link>
 
-        <nav className="hidden items-center gap-3 lg:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
-              className="rounded-full px-4 py-2 text-sm font-medium transition duration-200 hover:bg-[var(--color-primary)] hover:text-white"
-              style={{ color: "var(--text-primary)" }}
+              className="rounded-full px-4 py-2 text-sm font-medium text-white/80 transition duration-200 hover:bg-white/10 hover:text-white"
             >
               {item.label}
             </Link>
           ))}
         </nav>
-
-        <Link
-          to="/docs"
-          className="inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[rgba(99,14,6,0.25)] transition duration-200 hover:opacity-90"
-        >
-          Ver datos
-        </Link>
       </div>
     </header>
   );

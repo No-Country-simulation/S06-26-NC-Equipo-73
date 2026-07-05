@@ -37,11 +37,11 @@ function Sparkline({ color }: { color: string }) {
 }
 
 const motors: MotorProps[] = [
-  { index: 0, title: "Formación", metric: "+127%", desc: "Acceso a programas educativos por región", accent: "var(--primary-accent)" },
-  { index: 1, title: "Empleabilidad", metric: "86.3%", desc: "Tasa de inserción laboral por cluster productivo", accent: "var(--heatmap-mid)" },
-  { index: 2, title: "Experiencias Estructurantes", metric: "243K", desc: "Trayectorias de jóvenes monitoreadas", accent: "var(--primary-accent)" },
-  { index: 3, title: "Mentorías", metric: "1,847", desc: "Conexiones activas entre mentores y participantes", accent: "var(--heatmap-mid)" },
-  { index: 4, title: "Salud Mental", metric: "-32%", desc: "Reducción de brecha de acceso a atención", accent: "var(--heatmap-hot)" },
+  { index: 0, title: "Formación", metric: "+127%", desc: "Acceso a programas educativos por región", accent: "var(--color-secondary)" },
+  { index: 1, title: "Empleabilidad", metric: "86.3%", desc: "Tasa de inserción laboral por cluster productivo", accent: "var(--primary-accent)" },
+  { index: 2, title: "Experiencias Estructurantes", metric: "243K", desc: "Trayectorias de jóvenes monitoreadas", accent: "var(--color-secondary)" },
+  { index: 3, title: "Mentorías", metric: "1,847", desc: "Conexiones activas entre mentores y participantes", accent: "var(--primary-accent)" },
+  { index: 4, title: "Salud Mental", metric: "-32%", desc: "Reducción de brecha de acceso a atención", accent: "var(--color-secondary)" },
 ];
 
 const container = {
@@ -49,10 +49,6 @@ const container = {
   show: { transition: { staggerChildren: 0.12 } },
 };
 
-const itemAnim = {
-  hidden: { opacity: 0, y: 40 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
-};
 
 export default function MotorsSection() {
   return (
@@ -60,7 +56,7 @@ export default function MotorsSection() {
       id="modulos"
       title="Los 5 Motores de Análisis"
       subtitle="Cada motor despliega inteligencia especializada para cubrir todas las dimensiones del desarrollo territorial."
-      dark
+      style={{ backgroundColor: "var(--bg-surface)", color: "var(--light-text-body)" }}
     >
       <motion.div
         variants={container}
@@ -75,12 +71,12 @@ export default function MotorsSection() {
             // variants={itemAnim}
             className="group relative flex flex-col rounded-sm p-6 transition-all duration-500"
             style={{
-              backgroundColor: "var(--bg-surface)",
+              backgroundColor: "var(--text-primary)",
               border: "1px solid var(--border-subtle)",
             }}
             whileHover={{
               y: -6,
-              boxShadow: "0 12px 32px rgba(183, 40, 24, 0.1)",
+              boxShadow: "0 12px 32px rgba(34, 64, 111, 0.15)",
               transition: { duration: 0.3 },
             }}
           >
@@ -90,7 +86,7 @@ export default function MotorsSection() {
             />
             <h3
               className="text-sm font-semibold uppercase tracking-widest"
-              style={{ color: "var(--text-primary)" }}
+              style={{ color: "var(--text-secondary)" }}
             >
               {m.title}
             </h3>

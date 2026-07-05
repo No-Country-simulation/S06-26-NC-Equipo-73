@@ -5,7 +5,7 @@ const nodes = [
   {
     label: "Conectividad",
     description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
-    gradient: "from-[#630e06] to-[#e6af00]",
+    gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
       <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="24" cy="16" r="4" strokeWidth="1.5" />
@@ -20,7 +20,7 @@ const nodes = [
   {
     label: "Movilidad",
     description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
-    gradient: "from-[#e6af00] to-[#630e06]",
+    gradient: "from-[#5a7ebe] to-[#22406F]",
     icon: (
       <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
@@ -37,7 +37,7 @@ const nodes = [
   {
     label: "Empleo",
     description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
-    gradient: "from-[#630e06] to-[#e6af00]",
+    gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
       <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
         <rect x="8" y="20" width="32" height="18" rx="2" strokeWidth="1.5" />
@@ -50,7 +50,7 @@ const nodes = [
   {
     label: "Formación",
     description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
-    gradient: "from-[#e6af00] to-[#630e06]",
+    gradient: "from-[#5a7ebe] to-[#22406F]",
     icon: (
       <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M24 8L4 18l20 10 20-10L24 8z" strokeWidth="1.5" />
@@ -62,7 +62,7 @@ const nodes = [
   {
     label: "Salud Mental",
     description: "Nos permite enlazar distintas localidades para visualizar cuál de ellas necesita apoyo.",
-    gradient: "from-[#630e06] to-[#e6af00]",
+    gradient: "from-[#22406F] to-[#5a7ebe]",
     icon: (
       <svg viewBox="0 0 48 48" className="h-16 w-16" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M24 6C14.06 6 6 14.06 6 24s8.06 18 18 18 18-8.06 18-18S33.94 6 24 6z" strokeWidth="1.5" />
@@ -89,6 +89,10 @@ export default function IntelligenceSection() {
     <Section
       title="Inteligencia Territorial"
       subtitle="App BiT conecta las dimensiones clave del desarrollo regional en un sistema de análisis unificado."
+      style={{
+        background:
+          "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",
+      }}
     >
       <motion.div
         variants={container}
@@ -103,27 +107,21 @@ export default function IntelligenceSection() {
             variants={itemAnim}
             className="flex flex-col overflow-hidden rounded-sm"
             style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
+              backgroundColor: "var(--dark-card-bg)",
+              border: "1px solid var(--dark-card-border)",
             }}
           >
             <div
               className={`flex h-40 items-center justify-center bg-gradient-to-br ${n.gradient}`}
-              style={{ color: "var(--bg-main)" }}
+              style={{ color: "#ffffff" }}
             >
               {n.icon}
             </div>
             <div className="flex flex-1 flex-col gap-2 p-5">
-              <h3
-                className="text-base font-semibold"
-                style={{ color: "var(--text-primary)" }}
-              >
+              <h3 className="text-base font-semibold text-white">
                 {n.label}
               </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <p className="text-sm leading-relaxed text-white/75">
                 {n.description}
               </p>
             </div>
@@ -132,8 +130,7 @@ export default function IntelligenceSection() {
       </motion.div>
 
       <motion.p
-        className="mt-16 text-right text-sm leading-relaxed md:text-base"
-        style={{ color: "var(--text-secondary)" }}
+        className="mt-16 text-right text-sm leading-relaxed md:text-base text-white/60"
         initial={{ opacity: 0, x: 20 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
