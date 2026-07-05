@@ -1,0 +1,136 @@
+csv:
+  file_path: external-sources/large/CAGEDEST_012019.csv
+  encoding: latin1
+  delimiter: ;
+staging:
+  schema: public
+  table: temporal_movimientos_laborales_201901
+  truncate_before_load: true
+  drop_after_load: true
+target:
+  schema: public
+  table: movimientos_laborales_201901
+  mode: replace
+  indexes:
+    - [periodo_declarado, codigo_municipio]
+errors:
+  schema: public
+  table: errores_importacion
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+columns:
+  Admitidos/Desligados:
+    target: tipo_alta_baja_laboral
+    required: true
+    transform: trim
+  Competência Declarada:
+    target: periodo_declarado
+    required: true
+    type: integer
+  Município:
+    target: codigo_municipio
+    required: true
+    type: integer
+    references:
+      schema: public
+      table: municipios
+      column: codigo_municipio_ibge
+      lookup_transform: ibge_without_check_digit
+  Ano Declarado:
+    target: anio_declarado
+    required: true
+    type: integer
+  CBO 2002 Ocupação:
+    target: codigo_ocupacion_cbo_2002
+    references:
+      schema: public
+      table: ocupaciones_cbo
+      column: codigo_ocupacion
+    transform: trim
+  CNAE 1.0 Classe:
+    target: codigo_clase_cnae_version_1
+    transform: trim
+  CNAE 2.0 Classe:
+    target: codigo_clase_cnae_version_2
+    references:
+      schema: public
+      table: clases_cnae
+      column: codigo_clase
+    transform: trim
+  CNAE 2.0 Subclas:
+    target: codigo_subclase_cnae_version_2
+    references:
+      schema: public
+      table: subclases_cnae
+      column: codigo_subclase
+    transform: trim
+  Faixa Empr Início Jan:
+    target: tramo_empleo_inicio_enero
+    transform: trim
+  Grau Instrução:
+    target: grado_instruccion
+    transform: trim
+  Qtd Hora Contrat:
+    target: horas_contratadas
+    type: integer
+    min: 0
+  IBGE Subsetor:
+    target: subsector_ibge
+    transform: trim
+  Idade:
+    target: edad
+    type: integer
+    min: 0
+  Ind Aprendiz:
+    target: es_aprendiz
+    type: integer
+  Ind Portador Defic:
+    target: tiene_discapacidad
+    type: integer
+  Raça Cor:
+    target: raza_color
+    transform: trim
+  Salário Mensal:
+    target: salario_mensual
+    type: numeric
+    transform: numeric_comma
+    min: 0
+  Saldo Mov:
+    target: balance_movimiento
+    type: integer
+  Sexo:
+    target: sexo
+    transform: trim
+  Tempo Emprego:
+    target: tiempo_empleo
+    type: numeric
+    transform: numeric_comma
+    min: 0
+  Tipo Estab:
+    target: tipo_establecimiento
+    transform: trim
+  Tipo Defic:
+    target: tipo_discapacidad
+    transform: trim
+  Tipo Mov Desagregado:
+    target: tipo_movimiento_desagregado
+    transform: trim
+  UF:
+    target: codigo_uf
+    required: true
+    type: integer
+  Mesorregião:
+    target: mesorregion
+    transform: trim
+  Microrregião:
+    target: microrregion
+    transform: trim
+  Ind Trab Parcial:
+    target: trabajo_parcial
+    type: integer
+  Ind Trab Intermitente:
+    target: trabajo_intermitente
+    type: integer

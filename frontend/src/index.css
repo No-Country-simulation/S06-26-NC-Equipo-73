@@ -46,15 +46,21 @@
 
 @theme inline {
   --color-bg-main: var(--bg-main);
+  
   --color-bg-surface: var(--bg-surface);
   --color-border-subtle: var(--border-subtle);
+  
   --color-text-primary: var(--text-primary);
+  --color-text-primary-light: var(--text-primary-light);
   --color-text-secondary: var(--text-secondary);
+  
   --color-primary: var(--color-primary);
   --color-secondary: var(--color-secondary);
   --color-container: var(--color-container);
+  
   --color-primary-accent: var(--primary-accent);
   --color-secondary-accent: var(--secondary-accent);
+  
   --color-heatmap-cold: var(--heatmap-cold);
   --color-heatmap-mid: var(--heatmap-mid);
   --color-heatmap-hot: var(--heatmap-hot);
