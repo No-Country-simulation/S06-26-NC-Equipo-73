@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 
 interface SectionProps {
@@ -8,7 +8,6 @@ interface SectionProps {
   children: ReactNode;
   className?: string;
   dark?: boolean;
-  style?: CSSProperties;
 }
 
 export default function Section({
@@ -18,7 +17,6 @@ export default function Section({
   children,
   className = "",
   dark = false,
-  style,
 }: SectionProps) {
   return (
     <section
@@ -27,7 +25,6 @@ export default function Section({
       style={{
         backgroundColor: dark ? "var(--text-primary)" : "var(--bg-main)",
         color: dark ? "var(--bg-main)" : "var(--text-primary)",
-        ...style,
       }}
     >
       <div className="mx-auto max-w-7xl">
@@ -38,9 +35,6 @@ export default function Section({
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
             className="text-3xl font-bold tracking-tight md:text-4xl"
-            style={{
-              color: dark ? "var(--text-primary)" : "var(--text-secondary)",
-            }}
           >
             {title}
           </motion.h2>
@@ -52,9 +46,7 @@ export default function Section({
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mt-4 max-w-2xl text-lg leading-relaxed"
-            style={{
-              color: dark ? "var(--text-primary)" : "var(--text-secondary)",
-            }}
+            style={{ color: dark ? "var(--border-subtle)" : "var(--text-secondary)" }}
           >
             {subtitle}
           </motion.p>
