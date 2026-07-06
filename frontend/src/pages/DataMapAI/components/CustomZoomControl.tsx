@@ -4,19 +4,20 @@ import { Plus, Minus } from "lucide-react";
 export function CustomZoomControl() {
   const map = useMap();
 
+  const buttonsStyle:string = "flex h-9 w-9 items-center justify-center bg-bg-main text-text-primary hover:bg-bg-main/90 rounded-sm cursor-pointer" 
   return (
-    <div className="absolute bottom-6 right-6 z-[1000] flex flex-col   shadow-lg  gap-4">
+    <div className="absolute bottom-10 right-2 z-[1000] flex flex-col   shadow-lg  gap-4">
       <button
         type="button"
         onClick={() => map.zoomIn()}
-        className="flex h-9 w-9 items-center justify-center bg-text-primary text-white hover:bg-slate-700 rounded-sm cursor-pointer"
+        className={buttonsStyle}
       >
         <Plus size={24} />
       </button>
       <button
         type="button"
         onClick={() => map.zoomOut()}
-        className="flex h-9 w-9 items-center justify-center bg-text-primary text-white hover:bg-slate-700 rounded-sm cursor-pointer"
+        className={buttonsStyle}
       >
         <Minus size={24} />
       </button>
