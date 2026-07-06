@@ -18,7 +18,7 @@ export const Buttons = ({ servicios, setServicios }: Props) => {
 
   const baseStyle = "font-bold text-sm px-4 py-2.5 rounded-md";
   const hoverStyle =
-    "hover:bg-text-primary/80 hover:scale-105 transition-all duration-300 cursor-pointer";
+    "hover:bg-primary/90 hover:scale-105 transition-all duration-300 cursor-pointer";
 
   return (
     <div className="flex flex-wrap gap-2 sm:gap-4">
@@ -26,9 +26,9 @@ export const Buttons = ({ servicios, setServicios }: Props) => {
         <button
           key={name}
           type="button"
-          className={`${baseStyle} ${hoverStyle} ${
-            isActive ? "bg-inherit text-black" : "bg-text-primary text-white"
-          } border border-text-primary  w-auto disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`${baseStyle}  ${
+            isActive ? "bg-inherit text-primary" : `${hoverStyle} bg-primary text-text-primary`
+          } border border-primary  w-auto disabled:cursor-not-allowed disabled:opacity-50`}
           onClick={() => handleClick(name)}
           disabled={disable}
         >
