@@ -1,32 +1,29 @@
 import { Buttons } from "./components/Buttons";
 import { MapLayout } from "./components/MapLayout";
-import { Empleo } from "./markersGroups/Empleo";
-import { SaludMental } from "./markersGroups/SaludMental";
-import { Formaciones } from "./markersGroups/Formaciones";
-import { Mentorias } from "./markersGroups/Mentorias";
-import type { Servicio } from "./types";
+import { CrossDomainLayer } from "./markersGroups/CrossDomainLayer";
+import type { DataMapDomain, MapLayerStatus, Servicio } from "./types";
 import { useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
 import { useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
-import { useMapIndicators } from "../../features/map/hooks/useMapIndicators";
 
 const DataMapAI = () => {
     const [servicios, setServicios] = useState<Servicio[]>([
-        { name: "Empleo", isActive: false, disable: false },
-        { name: "Salud mental", isActive: false, disable: false },
-        { name: "Formaciones", isActive: false, disable: false },
-        { name: "Mentorias", isActive: false, disable: false },
+        { name: "Empleo", isActive: true, disable: false, domain: "employment" },
+        { name: "Salud mental", isActive: false, disable: false, domain: "health" },
+        { name: "Formaciones", isActive: false, disable: true },
+        { name: "Mentorias", isActive: false, disable: true },
         { name: "EXP. estructurantes", isActive: false, disable: true },
     ]);
+    const [mapLayerStatus, setMapLayerStatus] = useState<MapLayerStatus>({
+        isLoading: false,
+        error: null,
+        count: 0,
+        emptyMessage: null,
+    });
 
     const [isChatOpen, setIsChatOpen] = useState(false);
-    const {
-        data: indicatorCatalog,
-        error: indicatorCatalogError,
-        isLoading: isLoadingIndicatorCatalog,
-    } = useMapIndicators();
     
     const center: LatLngExpression = [-8.591089048076533, -55.23889767670842];
     const zoom:number = 3;
@@ -41,34 +38,29 @@ const DataMapAI = () => {
     }
 
     const activeServicio = servicios.find((servicio) => servicio.isActive);
-    const renderMarkers = () => {
-        if (!activeServicio) return null;
+    const activeDomain = activeServicio?.domain as DataMapDomain | undefined;
 
-        switch (activeServicio.name) {
-            case "Empleo":
-                return <Empleo />;
-            case "Salud mental":
-                return <SaludMental />;
-            case "Formaciones":
-                return <Formaciones />;
-            case "Mentorias":
-                return <Mentorias />;
-            // case "EXP. estructurantes":
-            //   return <ExperienciasEstructurantes />;
-            default:
-                return null;
-        }
-    };
     return (
         <div className="relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
                 <h2 className="text-xl font-bold">Selección de servicio:</h2>
-                <p className="text-sm text-text-primary/70">
-                    {isLoadingIndicatorCatalog && "Cargando catálogo de indicadores..."}
-                    {!isLoadingIndicatorCatalog && !indicatorCatalogError && `Indicadores disponibles: ${indicatorCatalog.length}`}
-                    {indicatorCatalogError && "No se pudo cargar el catálogo del mapa."}
-                </p>
                 <Buttons servicios={servicios} setServicios={setServicios} />
+                <div className="rounded-md border border-text-primary/20 bg-white/80 px-3 py-2 text-sm text-slate-700">
+                    {mapLayerStatus.isLoading && <span>Cargando capa territorial...</span>}
+                    {!mapLayerStatus.isLoading && mapLayerStatus.error && (
+                        <span>Error de datos: {mapLayerStatus.error}</span>
+                    )}
+                    {!mapLayerStatus.isLoading && !mapLayerStatus.error && (
+                        <span>
+                            Regiones renderizadas: {mapLayerStatus.count}
+                            {activeDomain ? " · vista cruzada con telecom" : ""}
+                            {mapLayerStatus.emptyMessage ? ` · ${mapLayerStatus.emptyMessage}` : ""}
+                        </span>
+                    )}
+                </div>
+                <p className="text-sm text-text-primary/70">
+                    Actualmente el mapa solo tiene datos para Empleo y Salud mental. Los otros servicios quedan desactivados.
+                </p>
             </div>
 
             {!isChatOpen && (
@@ -89,7 +81,13 @@ const DataMapAI = () => {
                 zoom= {zoom}
                 trigger={servicios.map((s) => s.isActive).join(",")}
                 />
-                {renderMarkers()}
+                {activeDomain ? (
+                    <CrossDomainLayer
+                        key={activeDomain}
+                        primaryDomain={activeDomain}
+                        onStatusChange={setMapLayerStatus}
+                    />
+                ) : null}
             </MapLayout>
         </div>
     );
