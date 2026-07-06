@@ -3,13 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
-import './tools/index.js';
 import { env } from './config/env.js';
 import { createContainer } from './container.js';
 import { createRoutes } from './routes/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
-import { server } from './config/mcp.js';
-import './config/db.js';
 
 //Importando para crear las rutas
 
@@ -40,17 +36,6 @@ const container = await createContainer();
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
-
-app.post('/mcp', async (req, res) => {
-    const transport = new StreamableHTTPServerTransport({})
-
-    res.on('close', () => {
-        transport.close()
-    });
-
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-})
 
 if (env.SWAGGER_ENABLED) {
     app.get('/swagger.json', (_req, res) => {
