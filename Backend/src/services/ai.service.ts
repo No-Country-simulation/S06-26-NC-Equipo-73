@@ -114,13 +114,14 @@ export class AIService {
                     }]);
 
                     const finalResult = await chat.sendMessage(
-                        `Responde ÚNICAMENTE con un JSON válido (sin markdown, sin \`\`\`json, sin texto adicional) con esta forma exacta:
-                        {
-                            "aiResponse": "string con la respuesta en lenguaje natural para el usuario",
+                        `Respond ONLY with valid JSON (no markdown, no \`\`\`json, no additional text) in this exact format.
+                         IMPORTANT: The "aiResponse" field MUST be written in the same language the user used in their original query.
+                         {
+                            "aiResponse": "natural language response for the user",
                             "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
                             "sources": ["string"]
-                        }
-                     `
+                         }
+                        `
                     );
 
                     const parsed = this.parseResponse(finalResult.response.text());

@@ -8,7 +8,7 @@ const probar = async () => {
         timeoutMs: 10000,
     });
 
-    const respuesta = await aiService.generate('¿Cuáles son las zonas con mayor concentración de usuarios y peor cobertura de red?');
+    const respuesta = await aiService.generate('Which zones have the highest user concentration?');
     console.log(respuesta);
 };
 
