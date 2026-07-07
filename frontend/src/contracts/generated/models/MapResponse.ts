@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MapAntenna } from './MapAntenna';
 import type { MapRegion } from './MapRegion';
 export type MapResponse = {
     appliedFilters: {
@@ -11,5 +12,6 @@ export type MapResponse = {
         indicators: Array<string>;
     };
     regions: Array<MapRegion>;
+    antennas: Array<MapAntenna>;
 };
 

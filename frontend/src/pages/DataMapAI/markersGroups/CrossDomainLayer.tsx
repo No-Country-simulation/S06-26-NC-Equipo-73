@@ -1,7 +1,7 @@
 import L from "leaflet";
 import { useEffect, useState } from "react";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { MapaService } from "../../../contracts/generated";
+import type { MapRegion } from "../../../contracts/generated";
 import { CrossDomainRegionMarker } from "../markers/CrossDomainRegionMarker";
 import type {
   CrossDomainMapPoint,
@@ -14,6 +14,9 @@ import type { MapIndicatorValue } from "../../../features/map/types";
 
 type CrossDomainLayerProps = {
   primaryDomain: DataMapDomain;
+  regions: MapRegion[];
+  isLoading: boolean;
+  error: string | null;
   onStatusChange?: (status: MapLayerStatus) => void;
 };
 
@@ -102,6 +105,13 @@ const METRIC_CODE_MAP: Record<CrossDomainMetricKey, string> = {
   telecomDropRate: "telecom.drop_rate",
   telecomActiveUsers: "telecom.active_users",
 };
+
+export function getCrossDomainIndicators(primaryDomain: DataMapDomain): string[] {
+  return [
+    ...DOMAIN_CONFIG[primaryDomain].indicators,
+    ...TELECOM_INDICATORS,
+  ];
+}
 
 function getIndicatorValue(
   indicators: CrossDomainMapPoint["indicators"],
@@ -268,102 +278,62 @@ const createClusterIcon = (cluster: { getChildCount: () => number }) => {
 
 export const CrossDomainLayer = ({
   primaryDomain,
+  regions,
+  isLoading,
+  error,
   onStatusChange,
 }: CrossDomainLayerProps) => {
   const [data, setData] = useState<CrossDomainMapPoint[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const indicatorCodes = new Set<string>(getCrossDomainIndicators(primaryDomain));
+    const basePoints: CrossDomainMapPoint[] = regions.map((region) => {
+      const filteredIndicators = region.indicators
+        .filter((indicator) => indicatorCodes.has(indicator.code))
+        .map(toIndicatorValue);
 
-    const loadData = async () => {
-      setIsLoading(true);
+      return {
+        municipalityCode: region.municipalityCode,
+        region: region.region,
+        lat: region.lat,
+        lng: region.lng,
+        profileDescription: region.profileDescription,
+        indicators: filteredIndicators,
+        metrics: toMetrics(filteredIndicators),
+        compositeScore: null,
+        scoreLabel: "insufficient_data",
+        insight: "",
+      };
+    });
 
-      try {
-        const { indicators: domainIndicators } = DOMAIN_CONFIG[primaryDomain];
-        const indicators = [...domainIndicators, ...TELECOM_INDICATORS];
-        const indicatorCodes = new Set<string>(indicators);
-        const response = await MapaService.getMap({
-          domains: [primaryDomain, "telecommunications"],
-          indicators,
-        });
+    const scoreMaps = DOMAIN_CONFIG[primaryDomain].scoreMaps(basePoints);
 
-        if (cancelled) {
-          return;
-        }
+    const nextData = basePoints.map((point) => {
+      const normalizedValues = scoreMaps
+        .map((scoreMap) => scoreMap.get(point.municipalityCode) ?? null)
+        .filter((value): value is number => value !== null);
 
-        const basePoints: CrossDomainMapPoint[] = response.regions.map((region) => {
-          const filteredIndicators = region.indicators
-            .filter((indicator) => indicatorCodes.has(indicator.code))
-            .map(toIndicatorValue);
+      const compositeScore =
+        normalizedValues.length === 0
+          ? null
+          : Math.round(
+              (normalizedValues.reduce((sum, value) => sum + value, 0) /
+                normalizedValues.length) *
+                100,
+            );
 
-          return {
-            municipalityCode: region.municipalityCode,
-            region: region.region,
-            lat: region.lat,
-            lng: region.lng,
-            profileDescription: region.profileDescription,
-            indicators: filteredIndicators,
-            metrics: toMetrics(filteredIndicators),
-            compositeScore: null,
-            scoreLabel: "insufficient_data",
-            insight: "",
-          };
-        });
+      const scoreLabel = getScoreLabel(compositeScore);
 
-        const scoreMaps = DOMAIN_CONFIG[primaryDomain].scoreMaps(basePoints);
+      return {
+        ...point,
+        compositeScore,
+        scoreLabel,
+        insight: buildInsight(primaryDomain, scoreLabel, point.metrics),
+      };
+    });
 
-        const nextData = basePoints.map((point) => {
-          const normalizedValues = scoreMaps
-            .map((scoreMap) => scoreMap.get(point.municipalityCode) ?? null)
-            .filter((value): value is number => value !== null);
-
-          const compositeScore =
-            normalizedValues.length === 0
-              ? null
-              : Math.round(
-                  (normalizedValues.reduce((sum, value) => sum + value, 0) /
-                    normalizedValues.length) *
-                    100,
-                );
-
-          const scoreLabel = getScoreLabel(compositeScore);
-
-          return {
-            ...point,
-            compositeScore,
-            scoreLabel,
-            insight: buildInsight(primaryDomain, scoreLabel, point.metrics),
-          };
-        });
-
-        setData(nextData);
-        setError(null);
-      } catch (requestError) {
-        if (cancelled) {
-          return;
-        }
-
-        setData([]);
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "No fue posible cargar el cruce territorial.",
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [primaryDomain]);
+    setData(nextData);
+  }, [primaryDomain, regions]);
 
   useEffect(() => {
     onStatusChange?.({

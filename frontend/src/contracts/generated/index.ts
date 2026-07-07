@@ -13,6 +13,7 @@ export type { DataRequest } from './models/DataRequest';
 export type { DataResponse } from './models/DataResponse';
 export type { HealthResponse } from './models/HealthResponse';
 export type { IndicatorCatalogResponse } from './models/IndicatorCatalogResponse';
+export type { MapAntenna } from './models/MapAntenna';
 export { MapIndicator } from './models/MapIndicator';
 export { MapIndicatorDefinition } from './models/MapIndicatorDefinition';
 export type { MapRegion } from './models/MapRegion';

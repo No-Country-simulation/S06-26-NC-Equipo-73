@@ -1,12 +1,15 @@
 import { Buttons } from "./components/Buttons";
 import { MapLayout } from "./components/MapLayout";
-import { CrossDomainLayer } from "./markersGroups/CrossDomainLayer";
+import { CrossDomainLayer, getCrossDomainIndicators } from "./markersGroups/CrossDomainLayer";
+import { AntennaLayer } from "./markersGroups/AntennaLayer";
 import type { DataMapDomain, MapLayerStatus, Servicio } from "./types";
 import { useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
 import { useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
+import { MapaService } from "../../contracts/generated";
+import type { MapAntenna, MapRegion } from "../../contracts/generated";
 
 const DataMapAI = () => {
     const [servicios, setServicios] = useState<Servicio[]>([
@@ -22,6 +25,8 @@ const DataMapAI = () => {
         count: 0,
         emptyMessage: null,
     });
+    const [regions, setRegions] = useState<MapRegion[]>([]);
+    const [antennas, setAntennas] = useState<MapAntenna[]>([]);
 
     const [isChatOpen, setIsChatOpen] = useState(false);
     
@@ -39,6 +44,70 @@ const DataMapAI = () => {
 
     const activeServicio = servicios.find((servicio) => servicio.isActive);
     const activeDomain = activeServicio?.domain as DataMapDomain | undefined;
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadMapData = async () => {
+            if (!activeDomain) {
+                setRegions([]);
+                setAntennas([]);
+                setMapLayerStatus({
+                    isLoading: false,
+                    error: null,
+                    count: 0,
+                    emptyMessage: null,
+                });
+                return;
+            }
+
+            setMapLayerStatus((current) => ({
+                ...current,
+                isLoading: true,
+                error: null,
+            }));
+
+            try {
+                const response = await MapaService.getMap({
+                    domains: [activeDomain, "telecommunications"],
+                    indicators: getCrossDomainIndicators(activeDomain),
+                });
+
+                if (cancelled) {
+                    return;
+                }
+
+                setRegions(response.regions);
+                setAntennas(response.antennas);
+                setMapLayerStatus((current) => ({
+                    ...current,
+                    isLoading: false,
+                    error: null,
+                }));
+            } catch (requestError) {
+                if (cancelled) {
+                    return;
+                }
+
+                setRegions([]);
+                setAntennas([]);
+                setMapLayerStatus((current) => ({
+                    ...current,
+                    isLoading: false,
+                    error:
+                        requestError instanceof Error
+                            ? requestError.message
+                            : "No fue posible cargar el cruce territorial.",
+                }));
+            }
+        };
+
+        void loadMapData();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeDomain]);
 
     return (
         <div className="bg-bg-surface relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
@@ -65,10 +134,14 @@ const DataMapAI = () => {
                 zoom= {zoom}
                 trigger={servicios.map((s) => s.isActive).join(",")}
                 />
+                <AntennaLayer antennas={antennas} />
                 {activeDomain ? (
                     <CrossDomainLayer
                         key={activeDomain}
                         primaryDomain={activeDomain}
+                        regions={regions}
+                        isLoading={mapLayerStatus.isLoading}
+                        error={mapLayerStatus.error}
                         onStatusChange={setMapLayerStatus}
                     />
                 ) : null}
