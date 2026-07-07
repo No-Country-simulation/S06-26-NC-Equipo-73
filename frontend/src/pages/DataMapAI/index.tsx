@@ -45,22 +45,6 @@ const DataMapAI = () => {
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
                 <h2 className="text-xl font-bold">Selección de servicio:</h2>
                 <Buttons servicios={servicios} setServicios={setServicios} />
-                <div className="rounded-md border border-text-primary/20 bg-white/80 px-3 py-2 text-sm text-slate-700">
-                    {mapLayerStatus.isLoading && <span>Cargando capa territorial...</span>}
-                    {!mapLayerStatus.isLoading && mapLayerStatus.error && (
-                        <span>Error de datos: {mapLayerStatus.error}</span>
-                    )}
-                    {!mapLayerStatus.isLoading && !mapLayerStatus.error && (
-                        <span>
-                            Regiones renderizadas: {mapLayerStatus.count}
-                            {activeDomain ? " · vista cruzada con telecom" : ""}
-                            {mapLayerStatus.emptyMessage ? ` · ${mapLayerStatus.emptyMessage}` : ""}
-                        </span>
-                    )}
-                </div>
-                <p className="text-sm text-text-primary/70">
-                    Actualmente el mapa solo tiene datos para Empleo y Salud mental. Los otros servicios quedan desactivados.
-                </p>
             </div>
 
             {!isChatOpen && (
