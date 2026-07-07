@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import errorImage from "../../assets/error404.webp";
-
 const NotFound = () => {
   const navigate = useNavigate();
 

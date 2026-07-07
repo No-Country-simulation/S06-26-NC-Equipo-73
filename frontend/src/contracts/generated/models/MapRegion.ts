@@ -11,3 +11,4 @@ export type MapRegion = {
     profileDescription: string;
     indicators: Array<MapIndicator>;
 };
+

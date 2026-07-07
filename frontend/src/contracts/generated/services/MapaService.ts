@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { MapResponse } from '../models/MapResponse';
 import type { IndicatorCatalogResponse } from '../models/IndicatorCatalogResponse';
+import type { MapResponse } from '../models/MapResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -20,8 +20,8 @@ export class MapaService {
         });
     }
     /**
-     * Obtiene las regiones y sus indicadores para el mapa
-     * @returns MapResponse Regiones disponibles para el mapa
+     * Obtiene municipios y sus indicadores para el mapa
+     * @returns MapResponse Municipios disponibles para el mapa
      * @throws ApiError
      */
     public static getMap({
@@ -31,12 +31,27 @@ export class MapaService {
         indicators,
         domains,
     }: {
+        /**
+         * Nombre exacto de la zona, sin distinguir mayúsculas
+         */
         region?: string,
+        /**
+         * Fecha de observación. Si se omite se usa la fecha más reciente disponible
+         */
         date?: string,
+        /**
+         * Periodo cargado en el tensor, por ejemplo MANHA
+         */
         period?: string,
+        /**
+         * Indicadores separados por coma. Si se omite se devuelven todos
+         */
         indicators?: Array<string>,
+        /**
+         * Limita la respuesta a uno o más dominios
+         */
         domains?: Array<'telecommunications' | 'health' | 'employment'>,
-    } = {}): CancelablePromise<MapResponse> {
+    }): CancelablePromise<MapResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/mapa',

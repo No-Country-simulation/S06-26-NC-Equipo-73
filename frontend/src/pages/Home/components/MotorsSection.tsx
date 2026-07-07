@@ -49,7 +49,6 @@ const container = {
   show: { transition: { staggerChildren: 0.12 } },
 };
 
-
 export default function MotorsSection() {
   return (
     <Section

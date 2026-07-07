@@ -1,25 +1,32 @@
 import { Buttons } from "./components/Buttons";
 import { MapLayout } from "./components/MapLayout";
-import { Empleo } from "./markersGroups/Empleo";
-import { SaludMental } from "./markersGroups/SaludMental";
-import { Formaciones } from "./markersGroups/Formaciones";
-import { Mentorias } from "./markersGroups/Mentorias";
-import type { Servicio } from "./types";
+import { CrossDomainLayer, getCrossDomainIndicators } from "./markersGroups/CrossDomainLayer";
+import { AntennaLayer } from "./markersGroups/AntennaLayer";
+import type { DataMapDomain, MapLayerStatus, Servicio } from "./types";
 import { useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
 import { useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
+import { MapaService } from "../../contracts/generated";
+import type { MapAntenna, MapRegion } from "../../contracts/generated";
 
 const DataMapAI = () => {
     const [servicios, setServicios] = useState<Servicio[]>([
-        { name: "Empleo", isActive: false, disable: false },
-        { name: "Telecomunicacion", isActive: false, disable: false },
-        { name: "Salud mental", isActive: false, disable: false },
+        { name: "Empleo", isActive: true, disable: false, domain: "employment" },
+        { name: "Salud mental", isActive: false, disable: false, domain: "health" },
         { name: "Formaciones", isActive: false, disable: true },
         { name: "Mentorias", isActive: false, disable: true },
         { name: "EXP. estructurantes", isActive: false, disable: true },
     ]);
+    const [mapLayerStatus, setMapLayerStatus] = useState<MapLayerStatus>({
+        isLoading: false,
+        error: null,
+        count: 0,
+        emptyMessage: null,
+    });
+    const [regions, setRegions] = useState<MapRegion[]>([]);
+    const [antennas, setAntennas] = useState<MapAntenna[]>([]);
 
     const [isChatOpen, setIsChatOpen] = useState(false);
     
@@ -36,24 +43,72 @@ const DataMapAI = () => {
     }
 
     const activeServicio = servicios.find((servicio) => servicio.isActive);
-    const renderMarkers = () => {
-        if (!activeServicio) return null;
+    const activeDomain = activeServicio?.domain as DataMapDomain | undefined;
 
-        switch (activeServicio.name) {
-            case "Empleo":
-                return <Empleo />;
-            case "Salud mental":
-                return <SaludMental />;
-            case "Formaciones":
-                return <Formaciones />;
-            case "Mentorias":
-                return <Mentorias />;
-            // case "EXP. estructurantes":
-            //   return <ExperienciasEstructurantes />;
-            default:
-                return null;
-        }
-    };
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadMapData = async () => {
+            if (!activeDomain) {
+                setRegions([]);
+                setAntennas([]);
+                setMapLayerStatus({
+                    isLoading: false,
+                    error: null,
+                    count: 0,
+                    emptyMessage: null,
+                });
+                return;
+            }
+
+            setMapLayerStatus((current) => ({
+                ...current,
+                isLoading: true,
+                error: null,
+            }));
+
+            try {
+                const response = await MapaService.getMap({
+                    domains: [activeDomain, "telecommunications"],
+                    indicators: getCrossDomainIndicators(activeDomain),
+                });
+
+                if (cancelled) {
+                    return;
+                }
+
+                setRegions(response.regions);
+                setAntennas(response.antennas);
+                setMapLayerStatus((current) => ({
+                    ...current,
+                    isLoading: false,
+                    error: null,
+                }));
+            } catch (requestError) {
+                if (cancelled) {
+                    return;
+                }
+
+                setRegions([]);
+                setAntennas([]);
+                setMapLayerStatus((current) => ({
+                    ...current,
+                    isLoading: false,
+                    error:
+                        requestError instanceof Error
+                            ? requestError.message
+                            : "No fue posible cargar el cruce territorial.",
+                }));
+            }
+        };
+
+        void loadMapData();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeDomain]);
+
     return (
         <div className="bg-bg-surface relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
@@ -79,7 +134,17 @@ const DataMapAI = () => {
                 zoom= {zoom}
                 trigger={servicios.map((s) => s.isActive).join(",")}
                 />
-                {renderMarkers()}
+                <AntennaLayer antennas={antennas} />
+                {activeDomain ? (
+                    <CrossDomainLayer
+                        key={activeDomain}
+                        primaryDomain={activeDomain}
+                        regions={regions}
+                        isLoading={mapLayerStatus.isLoading}
+                        error={mapLayerStatus.error}
+                        onStatusChange={setMapLayerStatus}
+                    />
+                ) : null}
             </MapLayout>
         </div>
     );

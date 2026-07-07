@@ -173,9 +173,63 @@ import { createMapRoutes } from './map.routes.js';
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/MapIndicator'
+ *     MapAntenna:
+ *       type: object
+ *       required: [ecgi, cluster, municipalityCode, municipality, profileDescription, lat, lng, networkSummary]
+ *       properties:
+ *         ecgi:
+ *           type: string
+ *           example: '724101234567890'
+ *         cluster:
+ *           type: string
+ *           example: CBD_BEIRAMAR
+ *         municipalityCode:
+ *           type: integer
+ *           example: 4205407
+ *         municipality:
+ *           type: string
+ *           example: Florianopolis
+ *         profileDescription:
+ *           type: string
+ *           example: Corredor comercial
+ *         lat:
+ *           type: number
+ *           format: double
+ *           example: -27.5954
+ *         lng:
+ *           type: number
+ *           format: double
+ *           example: -48.548
+ *         networkSummary:
+ *           type: object
+ *           required: [observationDate, observationPeriod, activeUsers, sessions, congestion, dropRate]
+ *           properties:
+ *             observationDate:
+ *               type: string
+ *               format: date
+ *               nullable: true
+ *             observationPeriod:
+ *               type: string
+ *               nullable: true
+ *             activeUsers:
+ *               type: number
+ *               nullable: true
+ *               example: 1240
+ *             sessions:
+ *               type: number
+ *               nullable: true
+ *               example: 5430
+ *             congestion:
+ *               type: number
+ *               nullable: true
+ *               example: 67.5
+ *             dropRate:
+ *               type: number
+ *               nullable: true
+ *               example: 2.3
  *     MapResponse:
  *       type: object
- *       required: [appliedFilters, regions]
+ *       required: [appliedFilters, regions, antennas]
  *       properties:
  *         appliedFilters:
  *           type: object
@@ -199,6 +253,10 @@ import { createMapRoutes } from './map.routes.js';
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/MapRegion'
+ *         antennas:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/MapAntenna'
  *     ValidationErrorDetails:
  *       type: object
  *       required: [formErrors, fieldErrors]

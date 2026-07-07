@@ -1,4 +1,8 @@
-export type Antena = {
+/* generated using openapi-typescript-codegen -- do not edit */
+/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+export type MapAntenna = {
     ecgi: string;
     cluster: string;
     municipalityCode: number;
@@ -15,3 +19,4 @@ export type Antena = {
         dropRate: number | null;
     };
 };
+

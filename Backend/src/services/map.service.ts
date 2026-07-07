@@ -30,6 +30,24 @@ export interface MapRegion {
     indicators: MapIndicator[];
 }
 
+export interface MapAntenna {
+    ecgi: string;
+    cluster: string;
+    municipalityCode: number;
+    municipality: string;
+    profileDescription: string;
+    lat: number;
+    lng: number;
+    networkSummary: {
+        observationDate: string | null;
+        observationPeriod: string | null;
+        activeUsers: number | null;
+        sessions: number | null;
+        congestion: number | null;
+        dropRate: number | null;
+    };
+}
+
 export interface MapResponse {
     appliedFilters: {
         region: string | null;
@@ -38,6 +56,7 @@ export interface MapResponse {
         indicators: string[];
     };
     regions: MapRegion[];
+    antennas: MapAntenna[];
 }
 
 export interface IndicatorCatalogEntry extends IndicatorDefinition {
@@ -82,7 +101,10 @@ export class MapService {
 
     async getRegions(query: MapQuery): Promise<MapResponse> {
         logger.debug('Map regions requested', query);
-        const territories = await this.mapRepository.findTerritories(query.region);
+        const [territories, antennas] = await Promise.all([
+            this.mapRepository.findTerritories(query.region),
+            this.mapRepository.findAntennas(query.region, query.date, query.period),
+        ]);
         const selectedCodes = new Set(query.indicators);
         const selectedProviders = this.providers.map((provider) => ({
             provider,
@@ -136,6 +158,7 @@ export class MapService {
                     };
                 }),
             })),
+            antennas,
         };
 
         logger.debug(`Map municipalities retrieved: ${response.regions.length}`);
