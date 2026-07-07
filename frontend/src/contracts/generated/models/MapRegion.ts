@@ -2,12 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MapIndicator } from './MapIndicator';
 export type MapRegion = {
+    municipalityCode: number;
     region: string;
     lat: number;
     lng: number;
-    concentration: number;
-    networkCoverage: number;
-    indicators: Array<string>;
+    profileDescription: string;
+    indicators: Array<MapIndicator>;
 };
 

@@ -4,38 +4,57 @@
   --font-body: "Roboto", sans-serif;
 
   /* Fondos y texto */
-  --bg-main: #f2e3c0;
-  --bg-surface: #fcf5c9;
-  --border-subtle: #eddfbd;
-  --text-primary: #402c2c;
-  --text-secondary: #6d6d6d;
+  --bg-main: #22406f;
+  --bg-surface: #dee5f2;
+  --border-subtle: #5a7ebe;
+  --text-primary: #ffffff;
+  --text-secondary: #22406f;
+  --text-tertiary: #8ba3c7;
 
-  /* Identidad (nombres actuales) */
-  --color-primary: #630e06;
-  --color-secondary: #e6af00;
-  --color-container: #d7f7e1;
+  /* Identidad */
+  --color-primary: #22406f;
+  --color-secondary: #5a7ebe;
+  --color-container: #dee5f2;
+
+  /* Gradients */
+  --gradient-dark: linear-gradient(
+    90deg,
+    #002654 0%,
+    #1a4a7a 50%,
+    #002654 100%
+  );
+
+  /* Glassmorphism */
+  --glass-bg: rgba(0, 38, 84, 0.6);
+  --glass-blur: 12px;
 
   /* Escala territorial (frío → caliente) */
   --heatmap-cold: var(--color-container);
   --heatmap-mid: var(--color-secondary);
   --heatmap-hot: var(--color-primary);
 
-  /* Alias legacy — usados en componentes existentes */
+  /* Alias legacy */
   --primary-accent: var(--color-primary);
   --secondary-accent: var(--color-secondary);
 }
 
 @theme inline {
   --color-bg-main: var(--bg-main);
+
   --color-bg-surface: var(--bg-surface);
   --color-border-subtle: var(--border-subtle);
+
   --color-text-primary: var(--text-primary);
+  --color-text-primary-light: var(--text-primary-light);
   --color-text-secondary: var(--text-secondary);
+
   --color-primary: var(--color-primary);
   --color-secondary: var(--color-secondary);
   --color-container: var(--color-container);
+
   --color-primary-accent: var(--primary-accent);
   --color-secondary-accent: var(--secondary-accent);
+
   --color-heatmap-cold: var(--heatmap-cold);
   --color-heatmap-mid: var(--heatmap-mid);
   --color-heatmap-hot: var(--heatmap-hot);

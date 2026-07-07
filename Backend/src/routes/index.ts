@@ -71,16 +71,90 @@ import { createMapRoutes } from './map.routes.js';
  *           type: array
  *           items:
  *             type: string
+ *     MapIndicatorDefinition:
+ *       type: object
+ *       required: [code, domain, label, description, unit, aggregation, source]
+ *       properties:
+ *         code:
+ *           type: string
+ *           example: health.hospitalizations
+ *         domain:
+ *           type: string
+ *           enum: [telecommunications, health, employment]
+ *         label:
+ *           type: string
+ *         description:
+ *           type: string
+ *         unit:
+ *           type: string
+ *         aggregation:
+ *           type: string
+ *           enum: [sum, weighted_average, average, average_by_period, rate]
+ *         source:
+ *           type: string
+ *     IndicatorCatalogResponse:
+ *       type: object
+ *       required: [indicators]
+ *       properties:
+ *         indicators:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/MapIndicatorDefinition'
+ *     MapIndicator:
+ *       type: object
+ *       required: [code, domain, label, description, value, unit, aggregation, status, source, observation]
+ *       properties:
+ *         code:
+ *           type: string
+ *           example: health.hospitalizations
+ *         domain:
+ *           type: string
+ *           enum: [telecommunications, health, employment]
+ *         label:
+ *           type: string
+ *           example: Usuarios activos
+ *         description:
+ *           type: string
+ *         value:
+ *           type: number
+ *           nullable: true
+ *           example: 3240
+ *         unit:
+ *           type: string
+ *           example: usuarios
+ *         aggregation:
+ *           type: string
+ *           enum: [sum, weighted_average, average, average_by_period, rate]
+ *         status:
+ *           type: string
+ *           enum: [available, no_data]
+ *         source:
+ *           type: string
+ *           example: RD202402.csv
+ *         observation:
+ *           type: object
+ *           required: [date, period]
+ *           properties:
+ *             date:
+ *               type: string
+ *               format: date
+ *               nullable: true
+ *             period:
+ *               type: string
+ *               nullable: true
  *     MapRegion:
  *       type: object
  *       required:
+ *         - municipalityCode
  *         - region
  *         - lat
  *         - lng
- *         - concentration
- *         - networkCoverage
+ *         - profileDescription
  *         - indicators
  *       properties:
+ *         municipalityCode:
+ *           type: integer
+ *           example: 4205407
  *         region:
  *           type: string
  *           example: Metropolitana
@@ -92,24 +166,97 @@ import { createMapRoutes } from './map.routes.js';
  *           type: number
  *           format: double
  *           example: -70.6693
- *         concentration:
- *           type: number
- *           example: 75
- *         networkCoverage:
- *           type: number
- *           example: 82.5
+ *         profileDescription:
+ *           type: string
+ *           example: Zona residencial de alta actividad
  *         indicators:
  *           type: array
  *           items:
- *             type: string
+ *             $ref: '#/components/schemas/MapIndicator'
+ *     MapAntenna:
+ *       type: object
+ *       required: [ecgi, cluster, municipalityCode, municipality, profileDescription, lat, lng, networkSummary]
+ *       properties:
+ *         ecgi:
+ *           type: string
+ *           example: '724101234567890'
+ *         cluster:
+ *           type: string
+ *           example: CBD_BEIRAMAR
+ *         municipalityCode:
+ *           type: integer
+ *           example: 4205407
+ *         municipality:
+ *           type: string
+ *           example: Florianopolis
+ *         profileDescription:
+ *           type: string
+ *           example: Corredor comercial
+ *         lat:
+ *           type: number
+ *           format: double
+ *           example: -27.5954
+ *         lng:
+ *           type: number
+ *           format: double
+ *           example: -48.548
+ *         networkSummary:
+ *           type: object
+ *           required: [observationDate, observationPeriod, activeUsers, sessions, congestion, dropRate]
+ *           properties:
+ *             observationDate:
+ *               type: string
+ *               format: date
+ *               nullable: true
+ *             observationPeriod:
+ *               type: string
+ *               nullable: true
+ *             activeUsers:
+ *               type: number
+ *               nullable: true
+ *               example: 1240
+ *             sessions:
+ *               type: number
+ *               nullable: true
+ *               example: 5430
+ *             congestion:
+ *               type: number
+ *               nullable: true
+ *               example: 67.5
+ *             dropRate:
+ *               type: number
+ *               nullable: true
+ *               example: 2.3
  *     MapResponse:
  *       type: object
- *       required: [regions]
+ *       required: [appliedFilters, regions, antennas]
  *       properties:
+ *         appliedFilters:
+ *           type: object
+ *           required: [region, date, period, indicators]
+ *           properties:
+ *             region:
+ *               type: string
+ *               nullable: true
+ *             date:
+ *               type: string
+ *               format: date
+ *               nullable: true
+ *             period:
+ *               type: string
+ *               nullable: true
+ *             indicators:
+ *               type: array
+ *               items:
+ *                 type: string
  *         regions:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/MapRegion'
+ *         antennas:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/MapAntenna'
  *     ValidationErrorDetails:
  *       type: object
  *       required: [formErrors, fieldErrors]

@@ -1,0 +1,58 @@
+csv:
+  file_path: visent/small/antenas_flp.csv
+  encoding: utf8
+  delimiter: ","
+staging:
+  schema: public
+  table: temporal_antenas
+  truncate_before_load: true
+  drop_after_load: true
+target:
+  schema: public
+  table: antenas
+  mode: replace
+  primary_key: ecgi
+errors:
+  schema: public
+  table: errores_importacion
+load:
+  dry_run: false
+  load_only: false
+  debug: true
+  debug_every_rows: 100000
+dimensions:
+  municipios:
+    schema: public
+    table: municipios
+    key_column: codigo_municipio_ibge
+    key_type: integer
+    value_column: nombre_municipio
+    transform: ascii_lower_trim
+    lookup_transform: ascii_lower_trim
+    create_table: false
+    create_missing: false
+columns:
+  ecgi:
+    target: ecgi
+    required: true
+    type: bigint
+  cluster:
+    target: nombre_zona
+    required: true
+    references:
+      schema: public
+      table: zonas
+      column: nombre_zona
+    transform: upper_trim
+  municipio:
+    target: codigo_municipio
+    required: true
+    dimension: municipios
+  lat:
+    target: latitud
+    required: true
+    type: numeric
+  lon:
+    target: longitud
+    required: true
+    type: numeric

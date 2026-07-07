@@ -1,0 +1,926 @@
+[
+  {
+    "id": "724050683790307",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.5865,
+    "lon": -48.4968
+  },
+  {
+    "id": "724050683793381",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.599258,
+    "lon": -48.579861
+  },
+  {
+    "id": "724050683793438",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.482269,
+    "lon": -48.491897
+  },
+  {
+    "id": "724050683884425",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.601483,
+    "lon": -48.592317
+  },
+  {
+    "id": "724050683898841",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.594028,
+    "lon": -48.520928
+  },
+  {
+    "id": "724050683935003",
+    "cluster": "UFSC",
+    "municipio": "Florianopolis",
+    "lat": -27.594397,
+    "lon": -48.556111
+  },
+  {
+    "id": "724050683935135",
+    "cluster": "CANASVIEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.4292,
+    "lon": -48.458697
+  },
+  {
+    "id": "724050683935372",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.7,
+    "lon": -48.550647
+  },
+  {
+    "id": "724050683983270",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.591528,
+    "lon": -48.552775
+  },
+  {
+    "id": "724050684142457",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.585,
+    "lon": -48.544722
+  },
+  {
+    "id": "724050684142570",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.529258,
+    "lon": -48.514072
+  },
+  {
+    "id": "724050684142660",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.6075,
+    "lon": -48.638889
+  },
+  {
+    "id": "724050684144778",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.595694,
+    "lon": -48.548194
+  },
+  {
+    "id": "724050684145073",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.587967,
+    "lon": -48.555231
+  },
+  {
+    "id": "724050684145529",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.6044,
+    "lon": -48.4752
+  },
+  {
+    "id": "724050684641810",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.568425,
+    "lon": -48.513053
+  },
+  {
+    "id": "724050684641828",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.656481,
+    "lon": -48.509303
+  },
+  {
+    "id": "724050684641844",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.451714,
+    "lon": -48.452175
+  },
+  {
+    "id": "724050684646269",
+    "cluster": "SAO_JOSE_CENTRO",
+    "municipio": "Sao Jose",
+    "lat": -27.608008,
+    "lon": -48.62685
+  },
+  {
+    "id": "724050685014142",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.605047,
+    "lon": -48.594306
+  },
+  {
+    "id": "724050685015130",
+    "cluster": "PALHOCA_PEDRA_BRANCA",
+    "municipio": "Palhoca",
+    "lat": -27.622639,
+    "lon": -48.674258
+  },
+  {
+    "id": "724050685015378",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.567222,
+    "lon": -48.617175
+  },
+  {
+    "id": "724050685015394",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.586064,
+    "lon": -48.609675
+  },
+  {
+    "id": "724050687263808",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.439722,
+    "lon": -48.387592
+  },
+  {
+    "id": "724050688192491",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.570694,
+    "lon": -48.644742
+  },
+  {
+    "id": "724050696233975",
+    "cluster": "PALHOCA_PEDRA_BRANCA",
+    "municipio": "Palhoca",
+    "lat": -27.641511,
+    "lon": -48.7061
+  },
+  {
+    "id": "724050696483882",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.599642,
+    "lon": -48.468531
+  },
+  {
+    "id": "724050696484153",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.612097,
+    "lon": -48.543378
+  },
+  {
+    "id": "724050696484161",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.598331,
+    "lon": -48.576389
+  },
+  {
+    "id": "724050696484269",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.664203,
+    "lon": -48.534994
+  },
+  {
+    "id": "724050696484277",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.682578,
+    "lon": -48.491986
+  },
+  {
+    "id": "724050696484293",
+    "cluster": "CANASVIEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.434297,
+    "lon": -48.460603
+  },
+  {
+    "id": "724050696484315",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.43975,
+    "lon": -48.419811
+  },
+  {
+    "id": "724050696484323",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.497669,
+    "lon": -48.419811
+  },
+  {
+    "id": "724050697326900",
+    "cluster": "VIA_EXPRESSA_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.612839,
+    "lon": -48.593017
+  },
+  {
+    "id": "724050697341860",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.596094,
+    "lon": -48.599653
+  },
+  {
+    "id": "724050697341879",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.542733,
+    "lon": -48.505306
+  },
+  {
+    "id": "724050697342190",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.5834,
+    "lon": -48.544683
+  },
+  {
+    "id": "724050697342212",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.528831,
+    "lon": -48.513689
+  },
+  {
+    "id": "724050697368777",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.595017,
+    "lon": -48.548794
+  },
+  {
+    "id": "724050697397122",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.5886,
+    "lon": -48.590167
+  },
+  {
+    "id": "724050697545253",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.537189,
+    "lon": -48.527061
+  },
+  {
+    "id": "724050697605949",
+    "cluster": "COQUEIROS",
+    "municipio": "Florianopolis",
+    "lat": -27.594117,
+    "lon": -48.571572
+  },
+  {
+    "id": "724050697605965",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.582264,
+    "lon": -48.534361
+  },
+  {
+    "id": "724050697792102",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.591372,
+    "lon": -48.552747
+  },
+  {
+    "id": "724050698098013",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.574,
+    "lon": -48.533583
+  },
+  {
+    "id": "724050698410114",
+    "cluster": "BIGUACU_BR101_NORTE",
+    "municipio": "Biguacu",
+    "lat": -27.531419,
+    "lon": -48.635089
+  },
+  {
+    "id": "724050698410254",
+    "cluster": "JURERE",
+    "municipio": "Florianopolis",
+    "lat": -27.489517,
+    "lon": -48.535633
+  },
+  {
+    "id": "724050698410270",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.462892,
+    "lon": -48.383642
+  },
+  {
+    "id": "724050698410289",
+    "cluster": "PALHOCA_CENTRO",
+    "municipio": "Palhoca",
+    "lat": -27.637456,
+    "lon": -48.666794
+  },
+  {
+    "id": "724050698422520",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.5843,
+    "lon": -48.501864
+  },
+  {
+    "id": "724050698571150",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.582717,
+    "lon": -48.641497
+  },
+  {
+    "id": "724050698586638",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.607781,
+    "lon": -48.634719
+  },
+  {
+    "id": "724050698820037",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.658469,
+    "lon": -48.506081
+  },
+  {
+    "id": "724050698820053",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.750786,
+    "lon": -48.508767
+  },
+  {
+    "id": "724050699109663",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.482361,
+    "lon": -48.491944
+  },
+  {
+    "id": "724050699109710",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.439417,
+    "lon": -48.387583
+  },
+  {
+    "id": "724050699323290",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.687672,
+    "lon": -48.565403
+  },
+  {
+    "id": "724050699521815",
+    "cluster": "JURERE",
+    "municipio": "Florianopolis",
+    "lat": -27.443222,
+    "lon": -48.507111
+  },
+  {
+    "id": "724050699654432",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.594083,
+    "lon": -48.521139
+  },
+  {
+    "id": "724050699654467",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.574556,
+    "lon": -48.510583
+  },
+  {
+    "id": "724050699654513",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.572611,
+    "lon": -48.430139
+  },
+  {
+    "id": "724050699654556",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.63325,
+    "lon": -48.473389
+  },
+  {
+    "id": "724050699654920",
+    "cluster": "JURERE",
+    "municipio": "Florianopolis",
+    "lat": -27.443417,
+    "lon": -48.502056
+  },
+  {
+    "id": "724050699842719",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.56575,
+    "lon": -48.626139
+  },
+  {
+    "id": "724050699844231",
+    "cluster": "BIGUACU_BR101_NORTE",
+    "municipio": "Biguacu",
+    "lat": -27.51925,
+    "lon": -48.640444
+  },
+  {
+    "id": "724050699844282",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.594139,
+    "lon": -48.612611
+  },
+  {
+    "id": "724050699861578",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.572972,
+    "lon": -48.617889
+  },
+  {
+    "id": "724050699861713",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.582278,
+    "lon": -48.677056
+  },
+  {
+    "id": "724050699861772",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Sao Jose",
+    "lat": -27.592778,
+    "lon": -48.606389
+  },
+  {
+    "id": "724050699871808",
+    "cluster": "SAO_JOSE_CENTRO",
+    "municipio": "Sao Jose",
+    "lat": -27.618972,
+    "lon": -48.634694
+  },
+  {
+    "id": "724050699871824",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.570472,
+    "lon": -48.644611
+  },
+  {
+    "id": "724050699925215",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Sao Jose",
+    "lat": -27.578972,
+    "lon": -48.609
+  },
+  {
+    "id": "724050699925231",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.600833,
+    "lon": -48.648111
+  },
+  {
+    "id": "724050699925240",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Sao Jose",
+    "lat": -27.571944,
+    "lon": -48.603917
+  },
+  {
+    "id": "724050699925258",
+    "cluster": "SAO_JOSE_ROÇADO",
+    "municipio": "Sao Jose",
+    "lat": -27.5465,
+    "lon": -48.629694
+  },
+  {
+    "id": "724050699925282",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.599583,
+    "lon": -48.620278
+  },
+  {
+    "id": "724050699979439",
+    "cluster": "SAO_JOSE_CENTRO",
+    "municipio": "Sao Jose",
+    "lat": -27.600028,
+    "lon": -48.608417
+  },
+  {
+    "id": "7240501000087309",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.584058,
+    "lon": -48.619528
+  },
+  {
+    "id": "7240501003294445",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.538056,
+    "lon": -48.527389
+  },
+  {
+    "id": "7240501003370664",
+    "cluster": "SAO_JOSE_BARREIROS",
+    "municipio": "Palhoca",
+    "lat": -27.673358,
+    "lon": -48.656689
+  },
+  {
+    "id": "7240501003484449",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.594881,
+    "lon": -48.54445
+  },
+  {
+    "id": "7240501003494940",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.578531,
+    "lon": -48.510769
+  },
+  {
+    "id": "7240501003495076",
+    "cluster": "SAO_JOSE_KOBRASOL",
+    "municipio": "Sao Jose",
+    "lat": -27.594458,
+    "lon": -48.637742
+  },
+  {
+    "id": "7240501003495238",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.596111,
+    "lon": -48.525528
+  },
+  {
+    "id": "7240501003495564",
+    "cluster": "UFSC",
+    "municipio": "Florianopolis",
+    "lat": -27.593478,
+    "lon": -48.552089
+  },
+  {
+    "id": "7240501003508453",
+    "cluster": "VIA_EXPRESSA_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.603972,
+    "lon": -48.581722
+  },
+  {
+    "id": "7240501003510334",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.580392,
+    "lon": -48.542172
+  },
+  {
+    "id": "7240501003861722",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.601811,
+    "lon": -48.526975
+  },
+  {
+    "id": "7240501003862800",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.586028,
+    "lon": -48.547444
+  },
+  {
+    "id": "7240501003862931",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.591397,
+    "lon": -48.54975
+  },
+  {
+    "id": "7240501003962715",
+    "cluster": "BIGUACU_BR101_NORTE",
+    "municipio": "Biguacu",
+    "lat": -27.508108,
+    "lon": -48.654131
+  },
+  {
+    "id": "7240501004011684",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.594453,
+    "lon": -48.586731
+  },
+  {
+    "id": "7240501004550410",
+    "cluster": "UFSC",
+    "municipio": "Florianopolis",
+    "lat": -27.590569,
+    "lon": -48.557111
+  },
+  {
+    "id": "7240501004978224",
+    "cluster": "BIGUACU_BR101_NORTE",
+    "municipio": "Biguacu",
+    "lat": -27.508108,
+    "lon": -48.654131
+  },
+  {
+    "id": "7240501005162520",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.439442,
+    "lon": -48.419442
+  },
+  {
+    "id": "7240501005162538",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.66,
+    "lon": -48.543331
+  },
+  {
+    "id": "7240501005162546",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.680831,
+    "lon": -48.4925
+  },
+  {
+    "id": "7240501005162554",
+    "cluster": "VIA_EXPRESSA_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.616389,
+    "lon": -48.587497
+  },
+  {
+    "id": "7240501005162562",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.604942,
+    "lon": -48.594306
+  },
+  {
+    "id": "7240501005162570",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.574167,
+    "lon": -48.533889
+  },
+  {
+    "id": "7240501005162589",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.751942,
+    "lon": -48.504442
+  },
+  {
+    "id": "7240501005162597",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.573889,
+    "lon": -48.431667
+  },
+  {
+    "id": "7240501005162600",
+    "cluster": "CBD_BEIRAMAR",
+    "municipio": "Florianopolis",
+    "lat": -27.585,
+    "lon": -48.543889
+  },
+  {
+    "id": "7240501005162619",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.588331,
+    "lon": -48.498056
+  },
+  {
+    "id": "7240501005162627",
+    "cluster": "VIA_EXPRESSA_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.603889,
+    "lon": -48.577778
+  },
+  {
+    "id": "7240501005162635",
+    "cluster": "UFSC",
+    "municipio": "Florianopolis",
+    "lat": -27.592608,
+    "lon": -48.555469
+  },
+  {
+    "id": "7240501005162643",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.542653,
+    "lon": -48.505306
+  },
+  {
+    "id": "7240501005162651",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.466247,
+    "lon": -48.382028
+  },
+  {
+    "id": "7240501005162660",
+    "cluster": "JURERE",
+    "municipio": "Florianopolis",
+    "lat": -27.439567,
+    "lon": -48.501131
+  },
+  {
+    "id": "7240501005162678",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.578497,
+    "lon": -48.510581
+  },
+  {
+    "id": "7240501005162686",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.580831,
+    "lon": -48.594167
+  },
+  {
+    "id": "7240501005162694",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.481442,
+    "lon": -48.49175
+  },
+  {
+    "id": "7240501005162708",
+    "cluster": "INGLESES",
+    "municipio": "Florianopolis",
+    "lat": -27.441667,
+    "lon": -48.385831
+  },
+  {
+    "id": "7240501005162716",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.633306,
+    "lon": -48.473306
+  },
+  {
+    "id": "7240501005162724",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.658331,
+    "lon": -48.505831
+  },
+  {
+    "id": "7240501005162732",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.496108,
+    "lon": -48.418608
+  },
+  {
+    "id": "7240501005162740",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.554614,
+    "lon": -48.497806
+  },
+  {
+    "id": "7240501005162759",
+    "cluster": "ESTREITO_CAPOEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.597667,
+    "lon": -48.585108
+  },
+  {
+    "id": "7240501005162767",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.583889,
+    "lon": -48.523889
+  },
+  {
+    "id": "7240501005162775",
+    "cluster": "CANASVIEIRAS",
+    "municipio": "Florianopolis",
+    "lat": -27.434294,
+    "lon": -48.460597
+  },
+  {
+    "id": "7240501005162783",
+    "cluster": "UFSC",
+    "municipio": "Florianopolis",
+    "lat": -27.596942,
+    "lon": -48.549719
+  },
+  {
+    "id": "7240501005162791",
+    "cluster": "RESIDENCIAL_NORTE",
+    "municipio": "Florianopolis",
+    "lat": -27.529167,
+    "lon": -48.510831
+  },
+  {
+    "id": "7240501005162856",
+    "cluster": "JURERE",
+    "municipio": "Florianopolis",
+    "lat": -27.439331,
+    "lon": -48.489575
+  },
+  {
+    "id": "7240501005162864",
+    "cluster": "LAGOA_CONCEICAO",
+    "municipio": "Florianopolis",
+    "lat": -27.609442,
+    "lon": -48.449442
+  },
+  {
+    "id": "7240501005172207",
+    "cluster": "CAMPECHE",
+    "municipio": "Florianopolis",
+    "lat": -27.705278,
+    "lon": -48.505556
+  },
+  {
+    "id": "7240501005172215",
+    "cluster": "NORTE_ILHA",
+    "municipio": "Florianopolis",
+    "lat": -27.451806,
+    "lon": -48.452108
+  },
+  {
+    "id": "7240501005172223",
+    "cluster": "TRINDADE",
+    "municipio": "Florianopolis",
+    "lat": -27.605831,
+    "lon": -48.531389
+  },
+  {
+    "id": "7240501005309970",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.699858,
+    "lon": -48.550608
+  },
+  {
+    "id": "7240501005319917",
+    "cluster": "SC401_CORREDOR",
+    "municipio": "Florianopolis",
+    "lat": -27.56265,
+    "lon": -48.516522
+  },
+  {
+    "id": "7240501005373318",
+    "cluster": "CENTRO_HISTORICO",
+    "municipio": "Florianopolis",
+    "lat": -27.60395,
+    "lon": -48.546242
+  },
+  {
+    "id": "7240501005938420",
+    "cluster": "AEROPORTO_HLZ",
+    "municipio": "Florianopolis",
+    "lat": -27.722875,
+    "lon": -48.563117
+  }
+]
