@@ -41,9 +41,9 @@ const DataMapAI = () => {
     const activeDomain = activeServicio?.domain as DataMapDomain | undefined;
 
     return (
-        <div className="relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
+        <div className="bg-bg-surface relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
-                <h2 className="text-xl font-bold">Selección de servicio:</h2>
+                <h2 className="text-primary text-2xl font-extrabold">Selección de servicio:</h2>
                 <Buttons servicios={servicios} setServicios={setServicios} />
             </div>
 
@@ -51,7 +51,7 @@ const DataMapAI = () => {
                 <button
                     type="button"
                     onClick={() => setIsChatOpen(true)}
-                    className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-text-primary px-4 py-3 text-sm font-semibold text-white shadow-lg lg:hidden"
+                    className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full bg-bg-main px-4 py-3 text-sm font-semibold text-text-primary shadow-lg lg:hidden"
                 >
                     <MessageCircle size={18} />
                     Abrir chat
@@ -59,7 +59,7 @@ const DataMapAI = () => {
             )}
 
             <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-            <MapLayout className="relative  h-[50vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full">
+            <MapLayout className="relative  h-[65vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full">
                 <ResetViewOnChange
                 center={center}
                 zoom= {zoom}

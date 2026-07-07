@@ -1,9 +1,18 @@
 import { motion } from "framer-motion";
 import { mapRegions } from "./mapRegions";
+import FlightAnimation from "./FlightAnimation";
 
-export default function HeroMap() {
+interface HeroMapProps {
+  visible?: boolean;
+}
+
+export default function HeroMap({ visible = false }: HeroMapProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.38] md:opacity-[0.32]">
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${
+        visible ? "opacity-100" : "opacity-[0.52] md:opacity-[0.42]"
+      }`}
+    >
       <motion.svg
         viewBox="0 0 2000 860"
         className="h-full w-full"
@@ -26,6 +35,7 @@ export default function HeroMap() {
             strokeLinejoin="round"
           />
         ))}
+        <FlightAnimation />
       </motion.svg>
     </div>
   );
