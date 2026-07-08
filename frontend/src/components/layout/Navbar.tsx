@@ -7,7 +7,6 @@ const navItems = [
   { label: "Nosotros", to: "#nosotros" },
   { label: "Módulos", to: "#modulos" },
   { label: "Cómo funciona", to: "#como-funciona" },
-  { label: "Datos", to: "#" },
   { label: "Mapa interactivo", to: "docs" },
 ];
 
