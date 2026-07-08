@@ -3,11 +3,20 @@ import type { Servicio } from "../types";
 type Props = {
   servicios: Servicio[];
   setServicios: React.Dispatch<React.SetStateAction<Servicio[]>>;
+  onServiceSelect?: () => void;
   disable?: boolean;
 };
 
-export const Buttons = ({ servicios, setServicios }: Props) => {
+export const Buttons = ({ servicios, setServicios, onServiceSelect }: Props) => {
   const handleClick = (name: string) => {
+    const selectedService = servicios.find((servicio) => servicio.name === name);
+
+    if (!selectedService || selectedService.disable || selectedService.isActive) {
+      return;
+    }
+
+    onServiceSelect?.();
+
     setServicios((prev) =>
       prev.map((servicio) => ({
         ...servicio,
