@@ -31,7 +31,7 @@ export default function HeroSection() {
             <div className="mt-6 h-1 w-1/4 bg-white/30" />
 
             <p className="mt-8 max-w-2xl text-lg leading-relaxed xl:text-xl text-white/80">
-              App BiT integra datos de conectividad, empleo, formación y salud
+              Data Pulse integra datos de conectividad, empleo, formación y salud
               mental para ayudar a los gestores públicos a identificar
               desigualdades antes de que se conviertan en problemas
               estructurales.
@@ -107,7 +107,7 @@ export default function HeroSection() {
               estructurales.
             </p>
 
-            <div className="mt-12 flex flex-wrap justify-center gap-4">
+            <div className="mt-12 flex flex-wrap justify-center gap-4 ">
               <Button variant="ghost" theme="dark">
                 <>
                   <Search className="w-4 h-4" />

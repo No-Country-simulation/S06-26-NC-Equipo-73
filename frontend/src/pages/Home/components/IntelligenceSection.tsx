@@ -140,7 +140,7 @@ export default function IntelligenceSection() {
   return (
     <Section
       title="Inteligencia Territorial"
-      subtitle="App BiT conecta las dimensiones clave del desarrollo regional en un sistema de análisis unificado."
+      subtitle="Data Pulse conecta las dimensiones clave del desarrollo regional en un sistema de análisis unificado."
       style={{
         background:
           "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",

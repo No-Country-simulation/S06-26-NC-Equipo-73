@@ -4,11 +4,11 @@ import { Menu, X } from "lucide-react";
 import logo from "../../assets/Logo_Data_Pulse.png";
 
 const navItems = [
-  { label: "Nosotros", to: "/#nosotros" },
-  { label: "Módulos", to: "/#modulos" },
-  { label: "Cómo funciona", to: "/#como-funciona" },
-  { label: "Datos", to: "/docs" },
-  { label: "Bit app", to: "/#bit-app" },
+  { label: "Nosotros", to: "#nosotros" },
+  { label: "Módulos", to: "#modulos" },
+  { label: "Cómo funciona", to: "#como-funciona" },
+  { label: "Datos", to: "#" },
+  { label: "Mapa interactivo", to: "docs" },
 ];
 
 export default function Navbar() {
@@ -53,15 +53,25 @@ export default function Navbar() {
         </button>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="rounded-full px-4 py-2 text-sm font-medium text-white/80 transition duration-200 hover:bg-white/10 hover:text-white"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) =>
+            item.label === "Mapa interactivo" ? (
+              <Link
+                key={item.label}
+                to={item.to}
+                className="rounded-full px-4 py-2 text-sm font-medium text-white/80 transition duration-200 hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.to}
+                className="rounded-full px-4 py-2 text-sm font-medium text-white/80 transition duration-200 hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </nav>
       </div>
 
