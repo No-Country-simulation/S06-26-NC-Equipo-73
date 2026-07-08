@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import Button from "../../../../components/ui/Button";
 import { Search } from "lucide-react";
 import HeroMap from "./HeroMap";
@@ -7,6 +8,8 @@ const GRADIENT =
   "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)";
 
 export default function HeroSection() {
+  const navigate = useNavigate();
+
   return (
     <>
       {/* Desktop: two columns */}
@@ -35,13 +38,21 @@ export default function HeroSection() {
             </p>
 
             <div className="mt-8 flex gap-4">
-              <Button variant="bigGhost" theme="dark">
+              <Button 
+                variant="bigGhost" 
+                theme="dark"
+                onClick={() => navigate("/docs")}
+                >
                 <>
                   <Search className="w-4 h-4" />
                   ASISTENTE IA
                 </>
               </Button>
-              <Button variant="bigPrimary" theme="dark">
+              <Button
+                variant="bigPrimary"
+                theme="dark"
+                onClick={() => navigate("/docs")}
+              >
                 MAPA INTERACTIVO
               </Button>
             </div>
@@ -103,7 +114,11 @@ export default function HeroSection() {
                   ASISTENTE IA
                 </>
               </Button>
-              <Button variant="primary" theme="dark">
+              <Button
+                variant="primary"
+                theme="dark"
+                onClick={() => navigate("/docs")}
+              >
                 MAPA INTERACTIVO
               </Button>
             </div>
