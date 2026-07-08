@@ -19,7 +19,7 @@ export default function BeforeAfterSection() {
   return (
     <Section
       title="Antes de Actuar"
-      subtitle="Compará el enfoque tradicional con lo que App BiT pone en tus manos."
+      subtitle="Compará el enfoque tradicional con lo que Data Pulse pone en tus manos."
       style={{
         background:
           "linear-gradient(90deg, #002654 0%, #1a4a7a 50%, #002654 100%)",
