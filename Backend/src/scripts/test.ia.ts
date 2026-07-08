@@ -8,7 +8,14 @@ const probar = async () => {
         timeoutMs: 10000,
     });
 
-    const respuesta = await aiService.generate('Which zones have the highest user concentration?');
+    const respuesta = await aiService.generate({
+        query: 'Which zones have the highest user concentration?',
+        filters: {
+            region: '',
+            indicator: '',
+        },
+        language: 'en',
+    });
     console.log(respuesta);
 };
 
