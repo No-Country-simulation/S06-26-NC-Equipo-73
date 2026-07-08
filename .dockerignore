@@ -1,0 +1,16 @@
+.git
+.gitignore
+.agents
+.codex
+
+node_modules
+**/node_modules
+
+logs
+**/*.log
+
+frontend/dist
+Backend/dist
+
+.DS_Store
+Thumbs.db
