@@ -113,7 +113,17 @@ const DataMapAI = () => {
         <div className="bg-bg-surface relative grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-12 lg:grid-rows-6">
             <div className="flex flex-col gap-2 lg:col-span-9 lg:col-start-1 lg:row-start-1">
                 <h2 className="text-primary text-2xl font-extrabold">Selección de servicio:</h2>
-                <Buttons servicios={servicios} setServicios={setServicios} />
+                <Buttons
+                    servicios={servicios}
+                    setServicios={setServicios}
+                    onServiceSelect={() =>
+                        setMapLayerStatus((current) => ({
+                            ...current,
+                            isLoading: true,
+                            error: null,
+                        }))
+                    }
+                />
             </div>
 
             {!isChatOpen && (
@@ -128,7 +138,10 @@ const DataMapAI = () => {
             )}
 
             <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-            <MapLayout className="relative  h-[65vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full">
+            <MapLayout
+                className="relative  h-[65vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full"
+                isLoading={mapLayerStatus.isLoading}
+            >
                 <ResetViewOnChange
                 center={center}
                 zoom= {zoom}
