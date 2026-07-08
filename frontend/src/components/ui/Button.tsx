@@ -8,7 +8,7 @@ interface ButtonProps extends HTMLMotionProps<"button"> {
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-sm text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer select-none";
+  "inline-flex items-center justify-center gap-2 rounded-sm text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer select-none whitespace-nowrap  text-ellipsis";
 
 const sizes = {
   primary: "border px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-3",

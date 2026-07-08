@@ -15,7 +15,7 @@ export default function HeroSection() {
       {/* Desktop: two columns */}
       <section
         id="bit-app"
-        className="hidden min-h-screen w-full overflow-hidden lg:grid lg:grid-cols-12"
+        className="pb-0 md:pb-8  sm:pb-0 hidden min-h-screen w-full overflow-hidden lg:grid lg:grid-cols-12"
         style={{ background: GRADIENT }}
       >
         <div className="flex flex-col justify-center lg:col-span-5 pl-16 xl:pl-24 pr-8 lg:pr-10 xl:pr-12">
