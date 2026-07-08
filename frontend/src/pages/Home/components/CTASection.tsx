@@ -42,7 +42,7 @@ export default function CTASection() {
         </motion.p>
 
         <motion.div
-          className="mt-12 flex flex-wrap gap-4"
+          className="mt-12 flex flex-wrap gap-4 flex-col items-center justify-center sm:flex-row"
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
