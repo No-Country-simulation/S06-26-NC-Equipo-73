@@ -31,7 +31,7 @@ export class DataService {
         );
 
         try {
-            const response = await this.aiService.generate(request.query);
+            const response = await this.aiService.generate(request);
 
             logger.info(
                 `Data query completed with ${response.dataPoints.length} data points and ${response.sources.length} sources`,

@@ -34,7 +34,7 @@ function esQuerySegura(query: string): { valida: boolean; motivo?: string } {
 };
 
 function aplicarLimite(query: string): string {
-    const queryLimpia = query.trim().replace(/;$/, ''); 
+    const queryLimpia = query.trim().replace(/;$/, '');
     const yaTieneLimit = /\blimit\b/i.test(queryLimpia);
 
     if (yaTieneLimit) {
@@ -43,6 +43,45 @@ function aplicarLimite(query: string): string {
 
     return `${queryLimpia} LIMIT ${LIMITE_MAXIMO_FILAS}`;
 };
+
+export async function executeFiltrarDatos(query: string) {
+    logger.info(`Tool filtrarDatos recibió: ${query}`);
+
+    const validacion = esQuerySegura(query);
+    if (!validacion.valida) {
+        logger.error(`Query rechazada: ${validacion.motivo} | Query: ${query}`);
+        return {
+            ok: false,
+            error: `Consulta rechazada: ${validacion.motivo}`,
+            rows: [],
+        };
+    };
+
+    const queryConLimite = aplicarLimite(query);
+
+    try {
+        const result = await pool.query(queryConLimite);
+
+        logger.info(`Tool filtrarDatos: ${result.rows.length} filas devueltas`);
+
+        return {
+            ok: true,
+            rows: result.rows,
+            appliedQuery: queryConLimite,
+            message: result.rows.length === 0 ? 'La consulta no devolvió resultados.' : undefined,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Tool filtrarDatos falló: ${message} | Query: ${queryConLimite}`);
+
+        return {
+            ok: false,
+            error: `Error al ejecutar la consulta: ${message}`,
+            rows: [],
+            appliedQuery: queryConLimite,
+        };
+    }
+}
 
 server.registerTool(
     'filtrarDatos',
@@ -53,39 +92,10 @@ server.registerTool(
         })
     },
     async ({ query }) => {
-        logger.info(`Tool filtrarDatos recibió: ${query}`);
+        const result = await executeFiltrarDatos(query);
 
-        const validacion = esQuerySegura(query);
-        if (!validacion.valida) {
-            logger.error(`Query rechazada: ${validacion.motivo} | Query: ${query}`);
-            return {
-                content: [{ type: 'text', text: `Consulta rechazada: ${validacion.motivo}` }]
-            };
+        return {
+            content: [{ type: 'text', text: JSON.stringify(result) }]
         };
-
-        const queryConLimite = aplicarLimite(query);
-
-        try {
-            const result = await pool.query(queryConLimite);
-
-            logger.info(`Tool filtrarDatos: ${result.rows.length} filas devueltas`);
-
-            if (result.rows.length === 0) {
-                return {
-                    content: [{ type: 'text', text: 'La consulta no devolvió resultados.' }]
-                };
-            };
-
-            return {
-                content: [{ type: 'text', text: JSON.stringify(result.rows) }]
-            };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            logger.error(`Tool filtrarDatos falló: ${message} | Query: ${queryConLimite}`);
-
-            return {
-                content: [{ type: 'text', text: `Error al ejecutar la consulta: ${message}` }]
-            };
-        }
     }
 );

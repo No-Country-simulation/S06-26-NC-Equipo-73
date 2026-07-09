@@ -1,5 +1,6 @@
-import { Search, ArrowUp, X, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { ArrowUp, X, MessageCircle } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import type { ChatMessage } from "../../../features/chat/types";
 import { useChatQuery } from "../../../features/chat/hooks/useChatQuery";
 
 type ChatProps = {
@@ -9,7 +10,13 @@ type ChatProps = {
 
 export const Chat = ({ isOpen, onClose }: ChatProps) => {
   const [value, setValue] = useState("");
-  const { answer, error, isLoading, submitQuery } = useChatQuery();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const { messages, isLoading, submitQuery } = useChatQuery();
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [isLoading, messages]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.target.style.height = "auto";
@@ -25,17 +32,104 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
       return;
     }
 
+    setValue("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     await submitQuery({ prompt });
+  };
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    void handleSubmit();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSubmit();
+    }
+  };
+
+  const renderFormattedMessage = (content: string) => {
+    const lines = content.split("\n");
+
+    return lines.map((line, lineIndex) => {
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+
+      return (
+        <Fragment key={`line-${lineIndex}`}>
+          {parts.map((part, partIndex) => {
+            const isBold = part.startsWith("**") && part.endsWith("**") && part.length > 4;
+
+            if (isBold) {
+              return (
+                <strong key={`part-${lineIndex}-${partIndex}`} className="font-semibold text-current">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+
+            return <Fragment key={`part-${lineIndex}-${partIndex}`}>{part}</Fragment>;
+          })}
+          {lineIndex < lines.length - 1 ? <br /> : null}
+        </Fragment>
+      );
+    });
+  };
+
+  const renderMessage = (message: ChatMessage) => {
+    const isUser = message.role === "user";
+    const isError = message.role === "error";
+
+    return (
+      <div
+        key={message.id}
+        className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+      >
+        <div
+          className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-sm ${
+            isUser
+              ? "bg-white text-bg-main"
+              : isError
+                ? "bg-red-500/15 text-red-100"
+                : "bg-text-primary/18 text-text-primary"
+          }`}
+        >
+          <p className="text-sm leading-6 break-words">
+            {isUser ? message.content : renderFormattedMessage(message.content)}
+          </p>
+
+          {!isUser && !isError && message.dataPoints && message.dataPoints.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-primary/70">
+                Datos relacionados
+              </p>
+              <ul className="space-y-2 text-xs">
+                {message.dataPoints.slice(0, 3).map((point) => (
+                  <li
+                    key={`${message.id}-${point.region}-${point.source}`}
+                    className="rounded-lg bg-white/10 px-3 py-2"
+                  >
+                    {point.region}: {point.value} ({point.source})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
     <>
       <aside
-        className={` fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-bg-main/80  p-4 shadow-xl transition-transform duration-300 lg:relative lg:inset-auto lg:right-auto lg:max-w-none lg:w-full lg:translate-x-0 lg:rounded-none lg:col-span-3 lg:row-span-6 lg:col-start-10 lg:row-start-1 ${
+        className={`fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-sm flex-col bg-bg-main/80 p-4 shadow-xl transition-transform duration-300 lg:relative lg:inset-auto lg:right-auto lg:max-w-none lg:w-full lg:translate-x-0 lg:rounded-none lg:col-span-3 lg:row-span-6 lg:col-start-10 lg:row-start-1 ${
           isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between">
           <div className="flex items-center gap-2 text-text-primary">
             <MessageCircle size={20} />
             <h3 className="text-lg font-semibold">Asistente</h3>
@@ -52,60 +146,47 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
 
 
 
-        <div className=" relative mt-4 flex items-center gap-2 ">
-          <Search className="absolute left-2 top-3 text-text-primary" />
-          <textarea
-            value={value}
-            className=" w-full resize-none overflow-hidden rounded-lg bg-bg-main px-12 py-3 text-text-primary text-lg  outline-none"
-            rows={1}
-            placeholder="Escribe aquí..."
-            onChange={handleChange}
-          />
-          <button
-            type="button"
-            onClick={() => void handleSubmit()}
-            disabled={!value.trim() || isLoading}
-            className="absolute right-2 top-2 rounded-full bg-bg-main p-1.5 transition-colors hover:bg-bg-main/80"
-          >
-            <ArrowUp className="text-primary" />
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-3 text-sm text-bg-main">
-          {isLoading && <p>Consultando al backend...</p>}
-
-          {error && (
-            <p className="rounded-lg bg-red-500/15 px-3 py-2 text-red-100">
-              {error}
+        <div className="mt-4 flex-1 min-h-0 overflow-y-auto pr-1 pb-4 text-sm">
+          {messages.length === 0 && !isLoading && (
+            <p className="rounded-2xl bg-white/8 px-4 py-3 text-text-primary/75">
+              Haz una pregunta para comenzar la conversación.
             </p>
           )}
 
-          {answer && (
-            <div className="space-y-3 rounded-xl bg-text-primary/40 p-4">
-              <p className="whitespace-pre-wrap text-sm leading-6">
-                {answer.message}
-              </p>
+          <div className="space-y-3">
+            {messages.map(renderMessage)}
 
-              {answer.dataPoints.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-bg-main/70">
-                    Datos relacionados
-                  </p>
-                  <ul className="space-y-2 text-xs">
-                    {answer.dataPoints.slice(0, 3).map((point) => (
-                      <li
-                        key={`${point.region}-${point.source}`}
-                        className="rounded-lg bg-white/8 px-3 py-2"
-                      >
-                        {point.region}: {point.value} ({point.source})
-                      </li>
-                    ))}
-                  </ul>
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-text-primary/18 px-4 py-3 text-sm leading-6 text-text-primary">
+                  Consultando al backend...
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            <div ref={messagesEndRef} aria-hidden="true" className="h-1" />
+          </div>
         </div>
+
+        <form className="relative mt-4 shrink-0" onSubmit={handleFormSubmit}>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            className="w-full resize-none overflow-hidden rounded-2xl border border-white/10 bg-bg-main pr-14 pl-4 py-3 text-lg text-text-primary outline-none"
+            rows={1}
+            placeholder="Escribe aquí..."
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            type="submit"
+            disabled={!value.trim() || isLoading}
+            aria-label="Enviar mensaje"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white p-2 text-bg-main transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:bg-white/40"
+          >
+            <ArrowUp size={18} />
+          </button>
+        </form>
       </aside>
 
       {isOpen && (

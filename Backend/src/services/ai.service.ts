@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { CONTEXTO_PROMPT } from '../prompts/contexto.prompt.js';
-import { pool } from '../config/db.js';
-import type { DataResponse } from './data.service.js';
+import type { DataQuery, DataResponse } from './data.service.js';
 import logger from '../config/logger.js';
+import { executeContextDB } from '../tools/contextBD.tool.js';
+import { executeFiltrarDatos } from '../tools/filtrarDatos.tool.js';
 
 export interface AIServiceConfig {
     apiKey?: string;
@@ -13,6 +14,7 @@ export interface AIServiceConfig {
 export class AIService {
     private readonly AiContext = CONTEXTO_PROMPT;
     private readonly client: GoogleGenerativeAI;
+    private readonly maxToolIterations = 6;
 
     constructor(private readonly config: AIServiceConfig) {
         if (!config.apiKey) {
@@ -21,7 +23,7 @@ export class AIService {
         this.client = new GoogleGenerativeAI(config.apiKey);
     }
 
-    async generate(input: string): Promise<DataResponse> {
+    async generate(input: DataQuery): Promise<DataResponse> {
         logger.info('Generación de la IA iniciada.');
 
         try {
@@ -37,7 +39,7 @@ export class AIService {
                                 properties: {
                                     palabras_clave: {
                                         type: SchemaType.STRING,
-                                        description: 'Palabras clave extraídas de la pregunta del usuario, separadas por coma. Ej: "red, cobertura, zona"'
+                                        description: 'Palabras clave extraídas de la pregunta del usuario, separadas por coma. Ej: "red, cobertura, zona"',
                                     }
                                 },
                                 required: ['palabras_clave']
@@ -57,86 +59,87 @@ export class AIService {
                                 required: ['query']
                             }
                         },
-                    ]
+                    ],
                 }]
             });
 
-            const prompt = `${this.AiContext} 
-                Consulta del usuario: ${input}
-                Para responder consultas sobre datos:
-                1. Usá PRIMERO contextDB con palabras clave de la pregunta
-                2. Con las tablas y columnas que te devuelva, usá filtrarDatos para traer los datos reales
-                3. Redactá la respuesta basándote únicamente en esos datos
-            `
+            const prompt = this.buildPrompt(input);
             const chat = model.startChat();
-            const result = await chat.sendMessage(prompt);
-            const response = result.response;
+            let result = await chat.sendMessage(prompt);
 
-            console.log('Texto respuesta:', response.text());
+            for (let iteration = 0; iteration < this.maxToolIterations; iteration += 1) {
+                const functionCalls = result.response.functionCalls() ?? [];
 
-            const functionCall = response.functionCalls()?.[0];
-
-            if (functionCall && functionCall.name === 'contextDB') {
-                const { palabras_clave } = functionCall.args as { palabras_clave: string };
-
-                const keywords = palabras_clave.split(',').map(k => k.trim());
-                const conditions = keywords.map((_, i) =>
-                    `(conceptos::text ILIKE $${i + 1} OR sinonimos::text ILIKE $${i + 1})`
-                ).join(' OR ');
-                const values = keywords.map(k => `%${k}%`);
-
-                const catalogoResult = await pool.query(`
-                        SELECT nombre_tabla, descripcion, columnas_relevantes, relaciones
-                        FROM "catalogo_tablas_datos"
-                        WHERE habilitada_mcp = true AND (${conditions})
-                        ORDER BY prioridad_busqueda ASC
-                        LIMIT 5
-                    `, values);
-
-                const result2 = await chat.sendMessage([{
-                    functionResponse: {
-                        name: 'contextDB',
-                        response: { result: JSON.stringify(catalogoResult.rows) }
-                    }
-                }]);
-
-                const functionCall2 = result2.response.functionCalls()?.[0];
-
-                if (functionCall2 && functionCall2.name === 'filtrarDatos') {
-                    const { query } = functionCall2.args as { query: string };
-                    const queryResult = await pool.query(query);
-
-                    await chat.sendMessage([{
-                        functionResponse: {
-                            name: 'filtrarDatos',
-                            response: { result: JSON.stringify(queryResult.rows) }
-                        }
-                    }]);
-
-                    const finalResult = await chat.sendMessage(
-                        `Respond ONLY with valid JSON (no markdown, no \`\`\`json, no additional text) in this exact format.
-                         IMPORTANT: The "aiResponse" field MUST be written in the same language the user used in their original query.
-                         {
-                            "aiResponse": "natural language response for the user",
-                            "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
-                            "sources": ["string"]
-                         }
-                        `
-                    );
-
-                    const parsed = this.parseResponse(finalResult.response.text());
+                if (functionCalls.length === 0) {
+                    const parsed = this.parseResponse(result.response.text());
                     logger.info(`Generación de la IA completada con ${parsed.dataPoints.length} puntos de datos.`);
                     return parsed;
                 }
+
+                logger.info(`La IA solicitó ${functionCalls.length} tool call(s) en la iteración ${iteration + 1}.`);
+
+                const functionResponses = await Promise.all(
+                    functionCalls.map(async (functionCall) => ({
+                        functionResponse: {
+                            name: functionCall.name,
+                            response: {
+                                result: JSON.stringify(await this.executeToolCall(functionCall.name, functionCall.args)),
+                            },
+                        },
+                    })),
+                );
+
+                result = await chat.sendMessage(functionResponses);
             }
-            const parsed = this.parseResponse(response.text());
-            logger.info(`Generación de la IA completada con ${parsed.dataPoints.length} puntos de datos.`);
-            return parsed;
+
+            throw new Error('La IA no produjo una respuesta final luego del máximo de tool calls permitidas.');
 
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             logger.error(`Generación de la IA fallida: ${message}`);
             throw new Error(`Generación de la IA fallida: ${message}`);
+        }
+    }
+
+    private buildPrompt(input: DataQuery): string {
+        const filters = [
+            input.filters.region ? `- Región sugerida: ${input.filters.region}` : '',
+            input.filters.indicator ? `- Indicador sugerido: ${input.filters.indicator}` : '',
+            input.language ? `- Idioma de salida: ${input.language}` : '',
+        ].filter(Boolean).join('\n');
+
+        return `${this.AiContext}
+Consulta del usuario: ${input.query}
+${filters ? `Contexto adicional:\n${filters}\n` : ''}
+Instrucciones:
+1. Usa contextDB SIEMPRE primero para descubrir qué tablas y columnas están disponibles para esta consulta.
+2. Usa únicamente las tablas y columnas que contextDB haya confirmado.
+3. Usa filtrarDatos para obtener datos reales desde la base.
+4. Si contextDB devuelve tablas de más de un dominio, considera relaciones territoriales para cruzarlas correctamente.
+5. Si una relación no puede sostenerse con los datos devueltos por contextDB, dilo explícitamente en vez de inventarla.
+6. Si usas tools, puedes hacer varias iteraciones hasta tener suficiente contexto.
+7. Responde SOLO con JSON válido, sin markdown ni texto extra, usando exactamente este formato:
+{
+  "aiResponse": "respuesta natural para el usuario",
+  "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
+  "sources": ["string"]
+}
+8. El campo "aiResponse" debe estar en el mismo idioma de la consulta del usuario.
+9. Basa tu respuesta únicamente en los datos obtenidos por tools.`;
+    }
+
+    private async executeToolCall(name: string, args: unknown) {
+        switch (name) {
+            case 'contextDB': {
+                const { palabras_clave } = (args ?? {}) as { palabras_clave?: string };
+                return executeContextDB(palabras_clave ?? '');
+            }
+            case 'filtrarDatos': {
+                const { query } = (args ?? {}) as { query?: string };
+                return executeFiltrarDatos(query ?? '');
+            }
+            default:
+                throw new Error(`Tool desconocida solicitada por la IA: ${name}`);
         }
     }
 
