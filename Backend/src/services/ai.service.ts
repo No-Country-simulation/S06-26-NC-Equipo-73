@@ -1,12 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { CONTEXTO_PROMPT } from '../prompts/contexto.prompt.js';
 import type { DataQuery, DataResponse } from './data.service.js';
 import logger from '../config/logger.js';
-import {
-    AI_TOOL_DECLARATIONS,
-    executeContextDB,
-    executeFiltrarDatos,
-} from '../tools/tool-executors.js';
+import { executeContextDB } from '../tools/contextBD.tool.js';
+import { executeFiltrarDatos } from '../tools/filtrarDatos.tool.js';
 
 export interface AIServiceConfig {
     apiKey?: string;
@@ -33,7 +30,36 @@ export class AIService {
             const model = this.client.getGenerativeModel({
                 model: this.config.model ?? 'gemini-2.5-flash',
                 tools: [{
-                    functionDeclarations: AI_TOOL_DECLARATIONS,
+                    functionDeclarations: [
+                        {
+                            name: 'contextDB',
+                            description: 'Consulta el catálogo de tablas disponibles en la base de datos para identificar cuáles son relevantes según la pregunta del usuario. Úsala SIEMPRE PRIMERO antes de filtrarDatos para saber qué tablas y columnas consultar.',
+                            parameters: {
+                                type: SchemaType.OBJECT,
+                                properties: {
+                                    palabras_clave: {
+                                        type: SchemaType.STRING,
+                                        description: 'Palabras clave extraídas de la pregunta del usuario, separadas por coma. Ej: "red, cobertura, zona"',
+                                    }
+                                },
+                                required: ['palabras_clave']
+                            }
+                        },
+                        {
+                            name: 'filtrarDatos',
+                            description: 'Ejecuta una consulta SQL SELECT contra la base de datos para obtener datos reales. Úsala SIEMPRE después de contextDB, usando las tablas y columnas que esa tool te devolvió.',
+                            parameters: {
+                                type: SchemaType.OBJECT,
+                                properties: {
+                                    query: {
+                                        type: SchemaType.STRING,
+                                        description: 'Consulta SQL SELECT a ejecutar'
+                                    }
+                                },
+                                required: ['query']
+                            }
+                        },
+                    ],
                 }]
             });
 
