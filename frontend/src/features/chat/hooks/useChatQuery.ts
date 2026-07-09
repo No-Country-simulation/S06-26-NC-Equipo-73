@@ -50,6 +50,7 @@ export function useChatQuery(): UseChatQueryResult {
           role: "assistant",
           content: response.message,
           dataPoints: response.dataPoints,
+          sources: response.sources,
         },
       ]);
     } catch (requestError) {

@@ -1,7 +1,10 @@
-import { ArrowUp, X, MessageCircle } from "lucide-react";
+import { ArrowUp, MessageCircle, Printer, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { useReactToPrint } from "react-to-print";
 import type { ChatMessage } from "../../../features/chat/types";
 import { useChatQuery } from "../../../features/chat/hooks/useChatQuery";
+import { PrintableChatMessage } from "./PrintableChatMessage";
 
 type ChatProps = {
   isOpen: boolean;
@@ -10,9 +13,36 @@ type ChatProps = {
 
 export const Chat = ({ isOpen, onClose }: ChatProps) => {
   const [value, setValue] = useState("");
+  const [selectedPrintableMessage, setSelectedPrintableMessage] = useState<ChatMessage | null>(null);
+  const [printTimestamp, setPrintTimestamp] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const printableContentRef = useRef<HTMLDivElement | null>(null);
   const { messages, isLoading, submitQuery } = useChatQuery();
+
+  const handlePrint = useReactToPrint({
+    contentRef: printableContentRef,
+    documentTitle: selectedPrintableMessage
+      ? `respuesta-asistente-${selectedPrintableMessage.id}`
+      : "respuesta-asistente",
+    pageStyle: `
+      @page {
+        margin: 16mm;
+      }
+
+      @media print {
+        html, body {
+          background: #ffffff;
+        }
+
+        body {
+          color: #111827;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `,
+  });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -51,6 +81,20 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
     }
   };
 
+  const handlePrintMessage = (message: ChatMessage) => {
+    const generatedAt = new Intl.DateTimeFormat("es-CL", {
+      dateStyle: "long",
+      timeStyle: "short",
+    }).format(new Date());
+
+    flushSync(() => {
+      setSelectedPrintableMessage(message);
+      setPrintTimestamp(generatedAt);
+    });
+
+    void handlePrint();
+  };
+
   const renderFormattedMessage = (content: string) => {
     const lines = content.split("\n");
 
@@ -81,6 +125,7 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.role === "user";
     const isError = message.role === "error";
+    const isAssistant = message.role === "assistant";
 
     return (
       <div
@@ -96,11 +141,24 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
                 : "bg-text-primary/18 text-text-primary"
           }`}
         >
+          {isAssistant && (
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handlePrintMessage(message)}
+                aria-label="Imprimir o guardar como PDF"
+                className="rounded-full border border-white/15 p-2 text-text-primary/80 transition-colors hover:bg-white/10 hover:text-text-primary"
+              >
+                <Printer size={16} />
+              </button>
+            </div>
+          )}
+
           <p className="text-sm leading-6 break-words">
             {isUser ? message.content : renderFormattedMessage(message.content)}
           </p>
 
-          {!isUser && !isError && message.dataPoints && message.dataPoints.length > 0 && (
+          {isAssistant && message.dataPoints && message.dataPoints.length > 0 && (
             <div className="mt-3 space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-primary/70">
                 Datos relacionados
@@ -188,6 +246,15 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
           </button>
         </form>
       </aside>
+
+      <div className="absolute -left-[9999px] top-0">
+        <div ref={printableContentRef}>
+          <PrintableChatMessage
+            message={selectedPrintableMessage}
+            generatedAt={printTimestamp}
+          />
+        </div>
+      </div>
 
       {isOpen && (
         <button
