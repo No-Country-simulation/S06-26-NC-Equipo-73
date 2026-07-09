@@ -120,11 +120,11 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
   return (
     <>
       <aside
-        className={` fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-bg-main/80  p-4 shadow-xl transition-transform duration-300 lg:relative lg:inset-auto lg:right-auto lg:max-w-none lg:w-full lg:translate-x-0 lg:rounded-none lg:col-span-3 lg:row-span-6 lg:col-start-10 lg:row-start-1 ${
+        className={`fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-sm flex-col bg-bg-main/80 p-4 shadow-xl transition-transform duration-300 lg:relative lg:inset-auto lg:right-auto lg:max-w-none lg:w-full lg:translate-x-0 lg:rounded-none lg:col-span-3 lg:row-span-6 lg:col-start-10 lg:row-start-1 ${
           isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between">
           <div className="flex items-center gap-2 text-text-primary">
             <MessageCircle size={20} />
             <h3 className="text-lg font-semibold">Asistente</h3>
@@ -141,7 +141,7 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
 
 
 
-        <form className="relative mt-4" onSubmit={handleFormSubmit}>
+        <form className="relative mt-4 shrink-0" onSubmit={handleFormSubmit}>
           <textarea
             ref={textareaRef}
             value={value}
@@ -161,7 +161,7 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
           </button>
         </form>
 
-        <div className="mt-4 space-y-3 overflow-y-auto pr-1 text-sm">
+        <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1 text-sm min-h-0">
           {messages.length === 0 && !isLoading && (
             <p className="rounded-2xl bg-white/8 px-4 py-3 text-text-primary/75">
               Haz una pregunta para comenzar la conversación.
