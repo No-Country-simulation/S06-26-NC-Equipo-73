@@ -1,5 +1,5 @@
 import { ArrowUp, X, MessageCircle } from "lucide-react";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "../../../features/chat/types";
 import { useChatQuery } from "../../../features/chat/hooks/useChatQuery";
 
@@ -11,7 +11,12 @@ type ChatProps = {
 export const Chat = ({ isOpen, onClose }: ChatProps) => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const { messages, isLoading, submitQuery } = useChatQuery();
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [isLoading, messages]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.target.style.height = "auto";
@@ -141,6 +146,28 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
 
 
 
+        <div className="mt-4 flex-1 min-h-0 overflow-y-auto pr-1 pb-4 text-sm">
+          {messages.length === 0 && !isLoading && (
+            <p className="rounded-2xl bg-white/8 px-4 py-3 text-text-primary/75">
+              Haz una pregunta para comenzar la conversación.
+            </p>
+          )}
+
+          <div className="space-y-3">
+            {messages.map(renderMessage)}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-text-primary/18 px-4 py-3 text-sm leading-6 text-text-primary">
+                  Consultando al backend...
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} aria-hidden="true" className="h-1" />
+          </div>
+        </div>
+
         <form className="relative mt-4 shrink-0" onSubmit={handleFormSubmit}>
           <textarea
             ref={textareaRef}
@@ -160,24 +187,6 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
             <ArrowUp size={18} />
           </button>
         </form>
-
-        <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1 text-sm min-h-0">
-          {messages.length === 0 && !isLoading && (
-            <p className="rounded-2xl bg-white/8 px-4 py-3 text-text-primary/75">
-              Haz una pregunta para comenzar la conversación.
-            </p>
-          )}
-
-          {messages.map(renderMessage)}
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl bg-text-primary/18 px-4 py-3 text-sm leading-6 text-text-primary">
-                Consultando al backend...
-              </div>
-            </div>
-          )}
-        </div>
       </aside>
 
       {isOpen && (
