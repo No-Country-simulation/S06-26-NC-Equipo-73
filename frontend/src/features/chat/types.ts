@@ -16,6 +16,7 @@ export type ChatMessage = {
   role: "user" | "assistant" | "error";
   content: string;
   dataPoints?: ChatDataPoint[];
+  sources?: string[];
 };
 
 export type ChatAnswer = {
