@@ -23,7 +23,6 @@ import { createMapRoutes } from './map.routes.js';
  *           format: date-time
  *     DataFilters:
  *       type: object
- *       required: [region, indicador]
  *       properties:
  *         region:
  *           type: string
@@ -33,7 +32,7 @@ import { createMapRoutes } from './map.routes.js';
  *           example: cobertura_red
  *     DataRequest:
  *       type: object
- *       required: [consulta, filtros, idioma]
+ *       required: [consulta]
  *       properties:
  *         consulta:
  *           type: string

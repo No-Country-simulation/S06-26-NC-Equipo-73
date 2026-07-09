@@ -6,15 +6,18 @@ import type { DataService } from '../services/data.service.js';
 const dataRequestSchema = z.object({
     consulta: z.string().trim().min(1),
     filtros: z.object({
-        region: z.string().trim().min(1),
-        indicador: z.string().trim().min(1),
-    }),
-    idioma: z.string().trim().min(1),
+        region: z.string().trim().optional().default(''),
+        indicador: z.string().trim().optional().default(''),
+    }).optional().default(() => ({
+        region: '',
+        indicador: '',
+    })),
+    idioma: z.string().trim().min(1).default('es'),
 }).transform(({ consulta, filtros, idioma }) => ({
     query: consulta,
     filters: {
-        region: filtros.region,
-        indicator: filtros.indicador,
+        region: filtros.region ?? '',
+        indicator: filtros.indicador ?? '',
     },
     language: idioma,
 }));

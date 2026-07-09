@@ -11,6 +11,14 @@ export type ChatDataPoint = {
   source: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant" | "error";
+  content: string;
+  dataPoints?: ChatDataPoint[];
+  sources?: string[];
+};
+
 export type ChatAnswer = {
   message: string;
   dataPoints: ChatDataPoint[];
