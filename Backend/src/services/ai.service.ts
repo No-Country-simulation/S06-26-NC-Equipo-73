@@ -112,17 +112,20 @@ export class AIService {
 Consulta del usuario: ${input.query}
 ${filters ? `Contexto adicional:\n${filters}\n` : ''}
 Instrucciones:
-1. Usa contextDB antes de consultar datos si necesitas ubicar tablas o columnas.
-2. Usa filtrarDatos para obtener datos reales desde la base.
-3. Si usas tools, puedes hacer varias iteraciones hasta tener suficiente contexto.
-4. Responde SOLO con JSON válido, sin markdown ni texto extra, usando exactamente este formato:
+1. Usa contextDB SIEMPRE primero para descubrir qué tablas y columnas están disponibles para esta consulta.
+2. Usa únicamente las tablas y columnas que contextDB haya confirmado.
+3. Usa filtrarDatos para obtener datos reales desde la base.
+4. Si contextDB devuelve tablas de más de un dominio, considera relaciones territoriales para cruzarlas correctamente.
+5. Si una relación no puede sostenerse con los datos devueltos por contextDB, dilo explícitamente en vez de inventarla.
+6. Si usas tools, puedes hacer varias iteraciones hasta tener suficiente contexto.
+7. Responde SOLO con JSON válido, sin markdown ni texto extra, usando exactamente este formato:
 {
   "aiResponse": "respuesta natural para el usuario",
   "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
   "sources": ["string"]
 }
-5. El campo "aiResponse" debe estar en el mismo idioma de la consulta del usuario.
-6. Basa tu respuesta únicamente en los datos obtenidos por tools.`;
+8. El campo "aiResponse" debe estar en el mismo idioma de la consulta del usuario.
+9. Basa tu respuesta únicamente en los datos obtenidos por tools.`;
     }
 
     private async executeToolCall(name: string, args: unknown) {
