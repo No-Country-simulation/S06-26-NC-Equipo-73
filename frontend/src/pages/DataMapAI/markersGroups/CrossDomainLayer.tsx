@@ -1,4 +1,3 @@
-import L from "leaflet";
 import { useEffect, useState } from "react";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { MapRegion } from "../../../contracts/generated";
@@ -326,7 +325,7 @@ export const CrossDomainLayer = ({
   return (
     <MarkerClusterGroup
       chunkedLoading
-      iconCreateFunction={(cluster) => createSharedClusterIcon(cluster, crossDomainClusterOffset)}
+      iconCreateFunction={(cluster:any) => createSharedClusterIcon(cluster, crossDomainClusterOffset)}
     >
       {data.map((point) => (
         <CrossDomainRegionMarker
