@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { CONTEXTO_PROMPT } from '../prompts/contexto.prompt.js';
 import { pool } from '../config/db.js';
 import type { DataResponse } from './data.service.js';
@@ -7,77 +7,98 @@ import logger from '../config/logger.js';
 export interface AIServiceConfig {
     apiKey?: string;
     model?: string;
+    baseURL: string;
     timeoutMs: number;
-}
+};
+
+interface CatalogoRow {
+    nombre_tabla: string;
+    descripcion: string;
+    columnas_relevantes: { columna: string }[];
+    relaciones: { tabla: string }[];
+};
 
 export class AIService {
     private readonly AiContext = CONTEXTO_PROMPT;
-    private readonly client: GoogleGenerativeAI;
+    private readonly client: OpenAI;
 
     constructor(private readonly config: AIServiceConfig) {
         if (!config.apiKey) {
             throw new Error('AIService requiere una ApiKey para ser configurada.');
         }
-        this.client = new GoogleGenerativeAI(config.apiKey);
+        this.client = new OpenAI({
+            apiKey: config.apiKey,
+            baseURL: config.baseURL
+        });
     }
 
     async generate(input: string): Promise<DataResponse> {
         logger.info('Generación de la IA iniciada.');
 
-        try {
-            const model = this.client.getGenerativeModel({
-                model: this.config.model ?? 'gemini-2.5-flash',
-                tools: [{
-                    functionDeclarations: [
-                        {
-                            name: 'contextDB',
-                            description: 'Consulta el catálogo de tablas disponibles en la base de datos para identificar cuáles son relevantes según la pregunta del usuario. Úsala SIEMPRE PRIMERO antes de filtrarDatos para saber qué tablas y columnas consultar.',
-                            parameters: {
-                                type: SchemaType.OBJECT,
-                                properties: {
-                                    palabras_clave: {
-                                        type: SchemaType.STRING,
-                                        description: 'Palabras clave extraídas de la pregunta del usuario, separadas por coma. Ej: "red, cobertura, zona"'
-                                    }
-                                },
-                                required: ['palabras_clave']
-                            }
-                        },
-                        {
-                            name: 'filtrarDatos',
-                            description: 'Ejecuta una consulta SQL SELECT contra la base de datos para obtener datos reales. Úsala SIEMPRE después de contextDB, usando las tablas y columnas que esa tool te devolvió.',
-                            parameters: {
-                                type: SchemaType.OBJECT,
-                                properties: {
-                                    query: {
-                                        type: SchemaType.STRING,
-                                        description: 'Consulta SQL SELECT a ejecutar'
-                                    }
-                                },
-                                required: ['query']
-                            }
-                        },
-                    ]
-                }]
-            });
-
-            const prompt = `${this.AiContext} 
+        const prompt = `${this.AiContext} 
                 Consulta del usuario: ${input}
                 Para responder consultas sobre datos:
                 1. Usá PRIMERO contextDB con palabras clave de la pregunta
                 2. Con las tablas y columnas que te devuelva, usá filtrarDatos para traer los datos reales
                 3. Redactá la respuesta basándote únicamente en esos datos
             `
-            const chat = model.startChat();
-            const result = await chat.sendMessage(prompt);
-            const response = result.response;
+        try {
+            const tools: OpenAI.Chat.ChatCompletionTool[] = [
+                {
+                    type: 'function',
+                    function: {
+                        name: 'contextDB',
+                        description: 'Consulta el catálogo de tablas disponibles en la base de datos para identificar cuáles son relevantes según la pregunta del usuario. Úsala SIEMPRE PRIMERO antes de filtrarDatos para saber qué tablas y columnas consultar.',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                palabras_clave: {
+                                    type: 'string',
+                                    description: 'Palabras clave extraídas de la pregunta del usuario, separadas por coma. Ej: "red, cobertura, zona"'
+                                }
+                            },
+                            required: ['palabras_clave']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'filtrarDatos',
+                        description: 'Ejecuta una consulta SQL SELECT contra la base de datos para obtener datos reales. Úsala SIEMPRE después de contextDB, usando las tablas y columnas que esa tool te devolvió.',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                query: {
+                                    type: 'string',
+                                    description: 'Consulta SQL SELECT a ejecutar'
+                                }
+                            },
+                            required: ['query']
+                        }
+                    }
+                }
+            ];
 
-            console.log('Texto respuesta:', response.text());
+            const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+                { role: 'user', content: prompt }
+            ];
 
-            const functionCall = response.functionCalls()?.[0];
+            const response = await this.client.chat.completions.create({
+                model: this.config.model ?? 'gemini-3.1-flash-lite',
+                messages,
+                tools
+            });
 
-            if (functionCall && functionCall.name === 'contextDB') {
-                const { palabras_clave } = functionCall.args as { palabras_clave: string };
+            const choice = response.choices[0];
+            if (!choice) throw new Error('No se recibió respuesta de la IA');
+            const message = choice.message;
+            const toolCall = message.tool_calls?.find(tc => tc.type === 'function');
+
+            console.log('Tool call:', toolCall);
+
+            if (toolCall && toolCall.function.name === 'contextDB') {
+                const { palabras_clave } = JSON.parse(toolCall.function.arguments) as { palabras_clave: string };
 
                 const keywords = palabras_clave.split(',').map(k => k.trim());
                 const conditions = keywords.map((_, i) =>
@@ -86,50 +107,122 @@ export class AIService {
                 const values = keywords.map(k => `%${k}%`);
 
                 const catalogoResult = await pool.query(`
-                        SELECT nombre_tabla, descripcion, columnas_relevantes, relaciones
-                        FROM "catalogo_tablas_datos"
-                        WHERE habilitada_mcp = true AND (${conditions})
-                        ORDER BY prioridad_busqueda ASC
-                        LIMIT 5
-                    `, values);
+                     SELECT 
+                        nombre_tabla,
+                        descripcion,
+                        columnas_relevantes,
+                        relaciones
+                    FROM "catalogo_tablas_datos"
+                    WHERE habilitada_mcp = true AND (${conditions})
+                    ORDER BY prioridad_busqueda ASC
+                    LIMIT 3
+                `, values);
 
-                const result2 = await chat.sendMessage([{
-                    functionResponse: {
-                        name: 'contextDB',
-                        response: { result: JSON.stringify(catalogoResult.rows) }
-                    }
-                }]);
+                const catalogoSimplificado = catalogoResult.rows.map((row: CatalogoRow) => ({
+                    nombre_tabla: row.nombre_tabla,
+                    descripcion: row.descripcion,
+                    columnas: Array.isArray(row.columnas_relevantes)
+                        ? row.columnas_relevantes.map((c: { columna: string }) => c.columna).join(', ')
+                        : '',
+                    relaciones: Array.isArray(row.relaciones)
+                        ? row.relaciones.map((r: { tabla: string }) => r.tabla).join(', ')
+                        : ''
+                }));
 
-                const functionCall2 = result2.response.functionCalls()?.[0];
+                console.log('Resultado catálogo:', catalogoSimplificado);
 
-                if (functionCall2 && functionCall2.name === 'filtrarDatos') {
-                    const { query } = functionCall2.args as { query: string };
+                messages.push({
+                    role: 'assistant',
+                    tool_calls: message.tool_calls
+                        ?.filter(tc => tc.type === 'function')
+                        .map(tc => {
+                            if (tc.type !== 'function') return tc;
+                            return {
+                                id: tc.id,
+                                type: 'function' as const,
+                                function: {
+                                    name: tc.function.name,
+                                    arguments: tc.function.arguments
+                                }
+                            };
+                        })
+                });
+                messages.push({
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(catalogoSimplificado)
+                });
+
+                console.log('Messages antes del turno 2:', JSON.stringify(messages, null, 2));
+                const response2 = await this.client.chat.completions.create({
+                    model: this.config.model ?? 'gemini-3.1-flash-lite',
+                    messages,
+                    tools
+                });
+
+                const choice2 = response2.choices[0];
+                if (!choice2) throw new Error('No se recibió respuesta de la IA');
+                const message2 = choice2.message;
+                const toolCall2 = message.tool_calls?.find(tc => tc.type === 'function');
+
+                console.log('Respuesta turno 2:', message2.content);
+                console.log('Tool call 2:', toolCall2);
+
+                if (toolCall2 && toolCall2.function.name === 'filtrarDatos') {
+                    const { query } = JSON.parse(toolCall2.function.arguments) as { query: string };
                     const queryResult = await pool.query(query);
 
-                    await chat.sendMessage([{
-                        functionResponse: {
-                            name: 'filtrarDatos',
-                            response: { result: JSON.stringify(queryResult.rows) }
-                        }
-                    }]);
+                    messages.push({
+                        role: 'assistant',
+                        tool_calls: message2.tool_calls
+                            ?.filter(tc => tc.type === 'function')
+                            .map(tc => {
+                                if (tc.type !== 'function') return tc;
+                                return {
+                                    id: tc.id,
+                                    type: 'function' as const,
+                                    function: {
+                                        name: tc.function.name,
+                                        arguments: tc.function.arguments
+                                    }
+                                };
+                            })
+                    });
+                    messages.push({
+                        role: 'tool',
+                        tool_call_id: toolCall2.id,
+                        content: JSON.stringify(queryResult.rows)
+                    });
 
-                    const finalResult = await chat.sendMessage(
-                        `Respond ONLY with valid JSON (no markdown, no \`\`\`json, no additional text) in this exact format.
-                         IMPORTANT: The "aiResponse" field MUST be written in the same language the user used in their original query.
-                         {
-                            "aiResponse": "natural language response for the user",
-                            "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
-                            "sources": ["string"]
-                         }
-                        `
-                    );
+                    const finalResponse = await this.client.chat.completions.create({
+                        model: this.config.model ?? 'gemini-3.1-flash-lite',
+                        messages: [...messages, {
+                            role: 'user',
+                            content: `Respond ONLY with valid JSON (no markdown, no \`\`\`json, no additional text) in this exact format.
+                    IMPORTANT: The "aiResponse" field MUST be written in the same language the user used in their original query.
+                    {
+                        "aiResponse": "natural language response for the user",
+                        "dataPoints": [{ "region": "string", "value": number, "source": "string" }],
+                        "sources": ["string"]
+                    }`
+                        }]
+                    });
 
-                    const parsed = this.parseResponse(finalResult.response.text());
+                    const choiceFinal = finalResponse.choices[0];
+                    if (!choiceFinal) throw new Error('No se recibió respuesta final de la IA');
+                    const rawText = choiceFinal.message.content ?? '';
+                    const parsed = this.parseResponse(rawText);
                     logger.info(`Generación de la IA completada con ${parsed.dataPoints.length} puntos de datos.`);
                     return parsed;
                 }
+                const rawText2 = message2.content ?? '';
+                const parsed2 = this.parseResponse(rawText2);
+                logger.info(`Generación de la IA completada con ${parsed2.dataPoints.length} puntos de datos.`);
+                return parsed2;
             }
-            const parsed = this.parseResponse(response.text());
+
+            const rawText = message.content ?? '';
+            const parsed = this.parseResponse(rawText);
             logger.info(`Generación de la IA completada con ${parsed.dataPoints.length} puntos de datos.`);
             return parsed;
 
@@ -138,7 +231,7 @@ export class AIService {
             logger.error(`Generación de la IA fallida: ${message}`);
             throw new Error(`Generación de la IA fallida: ${message}`);
         }
-    }
+    };
 
     private parseResponse(rawText: string): DataResponse {
         try {
