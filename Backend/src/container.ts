@@ -15,6 +15,7 @@ export const createContainer = async () => {
     const healthService = new HealthService();
     const aiService = new AIService({
         ...(env.AI_API_KEY && { apiKey: env.AI_API_KEY }),
+        ...(env.AI_BASE_URL && { baseUrl: env.AI_BASE_URL }),
         ...(env.AI_MODEL && { model: env.AI_MODEL }),
         timeoutMs: env.AI_TIMEOUT_MS,
     });

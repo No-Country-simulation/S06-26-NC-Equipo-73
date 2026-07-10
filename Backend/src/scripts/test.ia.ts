@@ -1,9 +1,10 @@
-import 'dotenv/config'
+import 'dotenv/config';
 import { AIService } from '../services/ai.service.js';
 
 const probar = async () => {
     const aiService = new AIService({
         apiKey: process.env.AI_API_KEY,
+        baseUrl: process.env.AI_BASE_URL,
         model: 'gemini-2.5-flash',
         timeoutMs: 10000,
     });
