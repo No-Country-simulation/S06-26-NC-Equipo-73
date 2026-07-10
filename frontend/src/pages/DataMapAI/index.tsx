@@ -6,8 +6,6 @@ import type { DataMapDomain, MapLayerStatus, Servicio } from "./types";
 import { useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
-import { useMap } from "react-leaflet";
-import type { LatLngExpression } from "leaflet";
 import { MapaService } from "../../contracts/generated";
 import type { MapAntenna, MapRegion } from "../../contracts/generated";
 
