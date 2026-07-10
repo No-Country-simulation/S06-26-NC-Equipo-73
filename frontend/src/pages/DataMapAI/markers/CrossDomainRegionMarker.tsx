@@ -1,5 +1,7 @@
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import empleoIcon from "./customIcons/empleo.svg";
+import saludIcon from "./customIcons/salud.svg";
 import type { CrossDomainMapPoint, DataMapDomain } from "../types";
 
 type CrossDomainRegionMarkerProps = {
@@ -7,44 +9,14 @@ type CrossDomainRegionMarkerProps = {
   primaryDomain: DataMapDomain;
 };
 
-function getMarkerColor(scoreLabel: CrossDomainMapPoint["scoreLabel"]) {
-  switch (scoreLabel) {
-    case "critical":
-      return "#b91c1c";
-    case "warning":
-      return "#d97706";
-    case "stable":
-      return "#15803d";
-    default:
-      return "#64748b";
-  }
-}
+function createMarkerIcon(primaryDomain: DataMapDomain) {
+  const iconUrl = primaryDomain === "employment" ? empleoIcon : saludIcon;
 
-function createMarkerIcon(color: string, score: number | null) {
-  return L.divIcon({
-    html: `
-      <div
-        style="
-          min-width: 20px;
-          height: 20px;
-          padding: 0 6px;
-          border-radius: 9999px;
-          background: ${color};
-          color: white;
-          border: 2px solid white;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          font-weight: 700;
-        "
-      >${score ?? "?"}</div>
-    `,
-    className: "",
-    iconSize: [24, 20],
-    iconAnchor: [12, 10],
-    popupAnchor: [0, -8],
+  return L.icon({
+    iconUrl,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -12],
   });
 }
 
@@ -81,10 +53,7 @@ export const CrossDomainRegionMarker = ({
   point,
   primaryDomain,
 }: CrossDomainRegionMarkerProps) => {
-  const icon = createMarkerIcon(
-    getMarkerColor(point.scoreLabel),
-    point.compositeScore,
-  );
+  const icon = createMarkerIcon(primaryDomain);
 
   return (
     <Marker position={[point.lat, point.lng]} icon={icon}>
