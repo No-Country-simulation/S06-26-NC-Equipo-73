@@ -1,8 +1,8 @@
+import L from "leaflet";
 import { useEffect, useState } from "react";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import type { MapRegion } from "../../../contracts/generated";
 import { CrossDomainRegionMarker } from "../markers/CrossDomainRegionMarker";
-import { createSharedClusterIcon } from "./clusterIcon";
 import type {
   CrossDomainMapPoint,
   CrossDomainMetricKey,
@@ -11,8 +11,6 @@ import type {
   MapLayerStatus,
 } from "../types";
 import type { MapIndicatorValue } from "../../../features/map/types";
-
-const crossDomainClusterOffset = { x: -6, y: 4 };
 
 type CrossDomainLayerProps = {
   primaryDomain: DataMapDomain;
@@ -247,6 +245,37 @@ function toIndicatorValue(indicator: {
   };
 }
 
+const createClusterIcon = (cluster: { getChildCount: () => number }) => {
+  const count = cluster.getChildCount();
+
+  let sizeClasses = "h-9 w-9 text-xs";
+  let colorClasses = "bg-gradient-to-br from-amber-500 to-red-700";
+
+  if (count >= 50) {
+    sizeClasses = "h-14 w-14 text-base";
+    colorClasses = "bg-gradient-to-br from-red-600 to-red-900";
+  } else if (count >= 10) {
+    sizeClasses = "h-11 w-11 text-sm";
+    colorClasses = "bg-gradient-to-br from-amber-500 to-orange-700";
+  }
+
+  return L.divIcon({
+    html: `
+      <div class="
+        flex items-center justify-center
+        ${sizeClasses} ${colorClasses}
+        rounded-full text-white font-semibold
+        border-2 border-white/25
+        shadow-lg shadow-black/40
+      ">
+        ${count}
+      </div>
+    `,
+    className: "",
+    iconSize: L.point(36, 36, true),
+  });
+};
+
 export const CrossDomainLayer = ({
   primaryDomain,
   regions,
@@ -323,10 +352,7 @@ export const CrossDomainLayer = ({
   }
 
   return (
-    <MarkerClusterGroup
-      chunkedLoading
-      iconCreateFunction={(cluster:any) => createSharedClusterIcon(cluster, crossDomainClusterOffset)}
-    >
+    <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon}>
       {data.map((point) => (
         <CrossDomainRegionMarker
           key={`cross-domain-${point.municipalityCode}`}

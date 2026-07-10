@@ -217,7 +217,7 @@ export const Chat = ({ isOpen, onClose }: ChatProps) => {
             {isLoading && (
               <div className="flex justify-start">
                 <div className="rounded-2xl bg-text-primary/18 px-4 py-3 text-sm leading-6 text-text-primary">
-                  Pensando...
+                  Consultando al backend...
                 </div>
               </div>
             )}

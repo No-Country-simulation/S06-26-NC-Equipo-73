@@ -6,6 +6,8 @@ import type { DataMapDomain, MapLayerStatus, Servicio } from "./types";
 import { useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
 import { MessageCircle } from "lucide-react";
+import { useMap } from "react-leaflet";
+import type { LatLngExpression } from "leaflet";
 import { MapaService } from "../../contracts/generated";
 import type { MapAntenna, MapRegion } from "../../contracts/generated";
 
@@ -28,17 +30,17 @@ const DataMapAI = () => {
 
     const [isChatOpen, setIsChatOpen] = useState(false);
     
-    // const center: LatLngExpression = [-8.591089048076533, -55.23889767670842];
-    // const zoom:number = 3;
-    // function ResetViewOnChange({ center, zoom, trigger }: any) {
-    //     const map = useMap();
+    const center: LatLngExpression = [-8.591089048076533, -55.23889767670842];
+    const zoom:number = 3;
+    function ResetViewOnChange({ center, zoom, trigger }: any) {
+        const map = useMap();
       
-    //     useEffect(() => {
-    //         map.flyTo(center, zoom, {duration: 0.2});
+        useEffect(() => {
+            map.flyTo(center, zoom, {duration: 0.2});
 
-    //     }, [trigger]);
-    //     return null;
-    // }
+        }, [trigger]);
+        return null;
+    }
 
     const activeServicio = servicios.find((servicio) => servicio.isActive);
     const activeDomain = activeServicio?.domain as DataMapDomain | undefined;
@@ -140,11 +142,11 @@ const DataMapAI = () => {
                 className="relative  h-[65vh] sm:h-[55vh] z-0 lg:col-span-9 lg:row-span-5 lg:row-start-2 lg:h-full"
                 isLoading={mapLayerStatus.isLoading}
             >
-                {/* <ResetViewOnChange
+                <ResetViewOnChange
                 center={center}
                 zoom= {zoom}
                 trigger={servicios.map((s) => s.isActive).join(",")}
-                /> */}
+                />
                 <AntennaLayer antennas={antennas} />
                 {activeDomain ? (
                     <CrossDomainLayer
